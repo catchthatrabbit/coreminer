@@ -30,7 +30,7 @@ option(ETHASHCPU "Build with CPU mining (only for development)" ON)
 option(ETHDBUS "Build with D-Bus support" OFF)
 option(APICORE "Build with API Server support" ON)
 option(BINKERN "Install AMD binary kernels" ON)
-option(DEVBUILD "Log developer metrics" OFF)
+option(DEVBUILD "Log developer metrics" ON)
 option(USE_SYS_OPENCL "Build with system OpenCL" OFF)
 
 # propagates CMake configuration options to the compiler

@@ -1440,7 +1440,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                 if (jPrm.isArray())
                 {
                     double nextWorkDifficulty =
-                        max(jPrm.get(Json::Value::ArrayIndex(0), 1).asDouble(), 0.0001);
+                        max(0.000001, 0.00001);
 
                     m_session->nextWorkBoundary = h256(dev::getTargetFromDiff(nextWorkDifficulty));
                 }

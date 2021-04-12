@@ -1,0 +1,17 @@
+name: CoreMiner
+on: [push]
+env:
+  BUILD_TYPE: Release
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Build
+      run: |
+        mkdir build && cd build
+        cmake ..
+        make all

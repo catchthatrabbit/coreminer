@@ -5,3 +5,6 @@
 	path = cmake/cable
 	url = https://github.com/ethereum/cable
 	branch = master
+[submodule "RandomY"]
+	path = RandomY
+	url = https://github.com/core-coin/RandomY

@@ -10,17 +10,8 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{github.workspace}}/build
-    - name: Configure CMake
-      shell: bash
-      working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
     - name: Build
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: ctest -C $BUILD_TYPE
+      run: |
+        mkdir build && cd build
+        cmake ..
+        make all

@@ -20,6 +20,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #include <libdevcore/Worker.h>
 #include <libethcore/EthashAux.h>
 #include <libethcore/Miner.h>
+#include <RandomY/src/randomx.h>
 
 #include <functional>
 
@@ -44,9 +45,14 @@ protected:
     void kick_miner() override;
 
 private:
+    bool createVM();
+    void destroyVM();
+
     atomic<bool> m_new_work = {false};
     void workLoop() override;
     CPSettings m_settings;
+    randomx_vm *m_vm;
+    randomx_dataset *m_dataset;
 };
 
 

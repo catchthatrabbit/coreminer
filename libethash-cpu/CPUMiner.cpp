@@ -40,6 +40,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "CPUMiner.h"
+#include "RandomY/src/randomx.h"
 
 
 /* Sanity check for defined OS */
@@ -170,9 +171,52 @@ struct CPUChannel : public LogChannel
 };
 #define cpulog clog(CPUChannel)
 
+bool CPUMiner::createVM()
+{
+    std::vector<std::thread> threads;
+    auto initThreadCount = getNumDevices();
+    auto flags = randomx_get_flags();
+    auto cache = randomx_alloc_cache(flags);
+    if (cache == nullptr) {
+      return false;
+    }
+
+    randomx_init_cache(cache, 0, 0);
+    m_dataset = randomx_alloc_dataset(flags);
+    if (m_dataset == nullptr) {
+      return false;
+    }
+    uint32_t datasetItemCount = randomx_dataset_item_count();
+    if (initThreadCount > 1) {
+      auto perThread = datasetItemCount / initThreadCount;
+      auto remainder = datasetItemCount % initThreadCount;
+      uint32_t startItem = 0;
+      for (auto i = 0; i < initThreadCount; ++i) {
+        auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+        threads.push_back(std::thread(&randomx_init_dataset, m_dataset, cache, startItem, count));
+        startItem += count;
+      }
+      for (auto i = 0; i < threads.size(); ++i) {
+        threads[i].join();
+      }
+    }
+    else {
+      randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
+    }
+    randomx_release_cache(cache);
+    cache = nullptr;
+    threads.clear();
+		m_vm = randomx_create_vm(flags, cache, m_dataset);
+}
+
+void CPUMiner::destroyVM()
+{
+    randomx_destroy_vm(m_vm);
+    randomx_release_dataset(m_dataset);
+}
 
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
-  : Miner("cpu-", _index), m_settings(_settings)
+  : Miner("cpu-", _index), m_settings(_settings), m_vm(NULL), m_dataset(NULL)
 {
     m_deviceDescriptor = _device;
 }

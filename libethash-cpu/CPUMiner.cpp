@@ -300,6 +300,58 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
+hash256 randomy_kernel(
+    const epoch_context& context, const hash512& seed, lookup_fn lookup) noexcept
+{
+    static constexpr size_t num_words = sizeof(hash1024) / sizeof(uint32_t);
+    const uint32_t index_limit = static_cast<uint32_t>(context.full_dataset_num_items);
+    const uint32_t seed_init = le::uint32(seed.word32s[0]);
+
+    hash1024 mix{{le::uint32s(seed), le::uint32s(seed)}};
+
+    hash256 mix_hash;
+    for (size_t i = 0; i < num_words; i += 4)
+    {
+        const uint32_t h1 = fnv1(mix.word32s[i], mix.word32s[i + 1]);
+        const uint32_t h2 = fnv1(h1, mix.word32s[i + 2]);
+        const uint32_t h3 = fnv1(h2, mix.word32s[i + 3]);
+        mix_hash.word32s[i / 4] = h3;
+    }
+
+    return le::uint32s(mix_hash);
+}
+
+hash512 randomy_seed(const hash256& header_hash, uint64_t nonce) noexcept
+{
+    nonce = le::uint64(nonce);
+    uint8_t init_data[sizeof(header_hash) + sizeof(nonce)];
+    std::memcpy(&init_data[0], &header_hash, sizeof(header_hash));
+    std::memcpy(&init_data[sizeof(header_hash)], &nonce, sizeof(nonce));
+
+    return keccak512(init_data, sizeof(init_data));
+}
+
+ethash_result randomy_hash(
+    const epoch_context* context, const hash256* header_hash, uint64_t nonce) noexcept
+{
+    const hash512 seed = randomy_seed(*header_hash, nonce);
+    const hash256 mix_hash = randomy_kernel(*context, seed, calculate_dataset_item_1024);
+    return {seed, mix_hash};
+}
+
+search_result randomy_search(const epoch_context_full& context, const hash256& header_hash,
+    const hash256& boundary, uint64_t start_nonce, size_t iterations) noexcept
+{
+    const uint64_t end_nonce = start_nonce + iterations;
+    for (uint64_t nonce = start_nonce; nonce < end_nonce; ++nonce)
+    {
+        result r = randomy_hash(context, header_hash, nonce);
+        if (is_less_or_equal(r.final_hash, boundary))
+            return {r, nonce};
+    }
+    return {};
+}
+
 
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
@@ -322,7 +374,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             break;
 
 
-        auto r = ethash::search(context, header, boundary, nonce, blocksize);
+        auto r = randomy_search(context, header, boundary, nonce, blocksize);
         if (r.solution_found)
         {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};

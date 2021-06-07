@@ -21,7 +21,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #include <libethcore/EthashAux.h>
 #include <libethcore/Miner.h>
 #include <RandomY/src/randomx.h>
-
 #include <functional>
 
 namespace dev

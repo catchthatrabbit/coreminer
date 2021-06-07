@@ -31,7 +31,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <libethcore/Farm.h>
 #include <ethash/ethash.hpp>
-
 #include <boost/version.hpp>
 
 #if 0
@@ -59,7 +58,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace dev;
 using namespace eth;
-
 
 /* ################## OS-specific functions ################## */
 
@@ -206,7 +204,7 @@ bool CPUMiner::createVM()
     randomx_release_cache(cache);
     cache = nullptr;
     threads.clear();
-		m_vm = randomx_create_vm(flags, cache, m_dataset);
+    m_vm = randomx_create_vm(flags, cache, m_dataset);
 }
 
 void CPUMiner::destroyVM()
@@ -300,58 +298,17 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
-hash256 randomy_kernel(
-    const epoch_context& context, const hash512& seed, lookup_fn lookup) noexcept
+bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexcept
 {
-    static constexpr size_t num_words = sizeof(hash1024) / sizeof(uint32_t);
-    const uint32_t index_limit = static_cast<uint32_t>(context.full_dataset_num_items);
-    const uint32_t seed_init = le::uint32(seed.word32s[0]);
-
-    hash1024 mix{{le::uint32s(seed), le::uint32s(seed)}};
-
-    hash256 mix_hash;
-    for (size_t i = 0; i < num_words; i += 4)
+    for (size_t i = 0; i < (sizeof(a) / sizeof(a.word64s[0])); ++i)
     {
-        const uint32_t h1 = fnv1(mix.word32s[i], mix.word32s[i + 1]);
-        const uint32_t h2 = fnv1(h1, mix.word32s[i + 2]);
-        const uint32_t h3 = fnv1(h2, mix.word32s[i + 3]);
-        mix_hash.word32s[i / 4] = h3;
+        if (a.word64s[i] > b.word64s[i])
+            return false;
+        if (a.word64s[i] < b.word64s[i])
+            return true;
     }
-
-    return le::uint32s(mix_hash);
+    return true;
 }
-
-hash512 randomy_seed(const hash256& header_hash, uint64_t nonce) noexcept
-{
-    nonce = le::uint64(nonce);
-    uint8_t init_data[sizeof(header_hash) + sizeof(nonce)];
-    std::memcpy(&init_data[0], &header_hash, sizeof(header_hash));
-    std::memcpy(&init_data[sizeof(header_hash)], &nonce, sizeof(nonce));
-
-    return keccak512(init_data, sizeof(init_data));
-}
-
-ethash_result randomy_hash(
-    const epoch_context* context, const hash256* header_hash, uint64_t nonce) noexcept
-{
-    const hash512 seed = randomy_seed(*header_hash, nonce);
-    const hash256 mix_hash = randomy_kernel(*context, seed, calculate_dataset_item_1024);
-    return {seed, mix_hash};
-}
-
-search_result randomy_search(const epoch_context_full& context, const hash256& header_hash,
-    const hash256& boundary, uint64_t start_nonce, size_t iterations) noexcept
-{
-    const uint64_t end_nonce = start_nonce + iterations;
-    for (uint64_t nonce = start_nonce; nonce < end_nonce; ++nonce)
-    {
-        result r = randomy_hash(context, header_hash, nonce);
-        if (is_less_or_equal(r.final_hash, boundary))
-            return {r, nonce};
-    }
-    return {};
-}
-
 
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
@@ -373,17 +330,24 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         if (shouldStop())
             break;
 
-
-        auto r = randomy_search(context, header, boundary, nonce, blocksize);
-        if (r.solution_found)
+        const uint64_t end_nonce = nonce + blocksize;
+        for (uint64_t n = nonce; n < end_nonce; ++n)
         {
-            h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
-            auto sol = Solution{r.nonce, mix, w, std::chrono::steady_clock::now(), m_index};
+            uint8_t init_data[sizeof(header) + sizeof(n)];
+            std::memcpy(&init_data[0], &header, sizeof(header));
+            std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
 
-            cpulog << EthWhite << "Job: " << w.header.abridged()
-                   << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
-            Farm::f().submitProof(sol);
+            ethash::hash256 final_hash;
+            randomx_calculate_hash(m_vm, init_data, sizeof init_data, &final_hash);
+            if (is_less_or_equal(final_hash, boundary)) {
+                h256 mix{reinterpret_cast<byte*>(final_hash.bytes), h256::ConstructFromPointer};
+                auto sol = Solution{nonce, mix, w, std::chrono::steady_clock::now(), m_index};
+                cpulog << EthWhite << "Job: " << w.header.abridged()
+                       << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
+                Farm::f().submitProof(sol);
+            }
         }
+
         nonce += blocksize;
 
         // Update the hash rate

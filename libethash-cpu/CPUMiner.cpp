@@ -201,10 +201,10 @@ bool CPUMiner::createVM()
     else {
       randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
     }
+    m_vm = randomx_create_vm(flags, cache, m_dataset);
     randomx_release_cache(cache);
     cache = nullptr;
     threads.clear();
-    m_vm = randomx_create_vm(flags, cache, m_dataset);
 }
 
 void CPUMiner::destroyVM()
@@ -217,6 +217,7 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
   : Miner("cpu-", _index), m_settings(_settings), m_vm(NULL), m_dataset(NULL)
 {
     m_deviceDescriptor = _device;
+    createVM();
 }
 
 
@@ -226,6 +227,7 @@ CPUMiner::~CPUMiner()
     stopWorking();
     kick_miner();
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
+    destroyVM();
 }
 
 
@@ -337,11 +339,12 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             std::memcpy(&init_data[0], &header, sizeof(header));
             std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
 
-            ethash::hash256 final_hash;
-            randomx_calculate_hash(m_vm, init_data, sizeof init_data, &final_hash);
+            char hash[RANDOMX_HASH_SIZE] = {};
+            randomx_calculate_hash(m_vm, init_data, sizeof init_data, &hash);
+            auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
             if (is_less_or_equal(final_hash, boundary)) {
                 h256 mix{reinterpret_cast<byte*>(final_hash.bytes), h256::ConstructFromPointer};
-                auto sol = Solution{nonce, mix, w, std::chrono::steady_clock::now(), m_index};
+                auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
                 cpulog << EthWhite << "Job: " << w.header.abridged()
                        << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
                 Farm::f().submitProof(sol);

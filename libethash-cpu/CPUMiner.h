@@ -32,10 +32,7 @@ class CPUMiner : public Miner
 public:
     CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device);
     ~CPUMiner() override;
-
-    static unsigned getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
-
     void search(const dev::eth::WorkPackage& w);
 
 protected:

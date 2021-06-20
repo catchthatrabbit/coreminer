@@ -116,50 +116,6 @@ static size_t getTotalPhysAvailableMemory()
 #endif
 }
 
-/*
- * return numbers of available CPUs
- */
-unsigned CPUMiner::getNumDevices()
-{
-#if 0
-    static unsigned cpus = 0;
-
-    if (cpus == 0)
-    {
-        std::vector< boost::fibers::numa::node > topo = boost::fibers::numa::topology();
-        for (auto n : topo) {
-            cpus += n.logical_cpus.size();
-        }
-    }
-    return cpus;
-#elif defined(__APPLE__) || defined(__MACOSX)
-    unsigned int cpus_available = std::thread::hardware_concurrency();
-    if (cpus_available <= 0)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at std::thread::hardware_concurrency \""
-              << cpus_available << " were found." << "\"\n";
-        return 0;
-    }
-    return cpus_available;
-
-#elif defined(__linux__)
-    long cpus_available;
-    cpus_available = sysconf(_SC_NPROCESSORS_ONLN);
-    if (cpus_available == -1L)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \""
-              << strerror(errno) << "\"\n";
-        return 0;
-    }
-    return cpus_available;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return sysinfo.dwNumberOfProcessors;
-#endif
-}
-
-
 /* ######################## CPU Miner ######################## */
 
 struct CPUChannel : public LogChannel
@@ -172,7 +128,7 @@ struct CPUChannel : public LogChannel
 bool CPUMiner::createVM()
 {
     std::vector<std::thread> threads;
-    auto initThreadCount = getNumDevices();
+    auto initThreadCount = std::thread::hardware_concurrency();
     auto flags = randomx_get_flags();
     auto cache = randomx_alloc_cache(flags);
     if (cache == nullptr) {
@@ -419,9 +375,8 @@ void CPUMiner::workLoop()
 
 void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
 {
-    unsigned numDevices = getNumDevices();
-
-    for (unsigned i = 0; i < numDevices; i++)
+    auto numDevices = std::thread::hardware_concurrency();
+    for (auto i = 0; i < numDevices; i++)
     {
         string uniqueId;
         ostringstream s;

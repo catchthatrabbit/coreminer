@@ -36,12 +36,11 @@ public:
     void search(const dev::eth::WorkPackage& w);
 
 protected:
-    bool initDevice() override;
     bool initEpoch_internal() override;
     void kick_miner() override;
 
 private:
-    bool createVM();
+    void createVM();
     void destroyVM();
 
     atomic<bool> m_new_work = {false};

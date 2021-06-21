@@ -125,48 +125,59 @@ struct CPUChannel : public LogChannel
 };
 #define cpulog clog(CPUChannel)
 
-bool CPUMiner::createVM()
+void CPUMiner::createVM()
 {
-    std::vector<std::thread> threads;
-    auto initThreadCount = std::thread::hardware_concurrency();
-    auto flags = randomx_get_flags();
-    auto cache = randomx_alloc_cache(flags);
-    if (cache == nullptr) {
-      return false;
-    }
+    try {
+        std::vector<std::thread> threads;
+        auto initThreadCount = std::thread::hardware_concurrency();
+        auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
+        auto cache = randomx_alloc_cache(flags);
+        if (cache == nullptr) {
+          return;
+        }
 
-    randomx_init_cache(cache, 0, 0);
-    m_dataset = randomx_alloc_dataset(flags);
-    if (m_dataset == nullptr) {
-      return false;
+        randomx_init_cache(cache, 0, 0);
+        m_dataset = randomx_alloc_dataset(flags);
+        if (m_dataset == nullptr) {
+          return;
+        }
+        uint32_t datasetItemCount = randomx_dataset_item_count();
+        if (initThreadCount > 1) {
+          auto perThread = datasetItemCount / initThreadCount;
+          auto remainder = datasetItemCount % initThreadCount;
+          uint32_t startItem = 0;
+          for (auto i = 0; i < initThreadCount; ++i) {
+            auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+            threads.push_back(std::thread(&randomx_init_dataset, m_dataset, cache, startItem, count));
+            startItem += count;
+          }
+          for (auto i = 0; i < threads.size(); ++i) {
+            threads[i].join();
+          }
+        }
+        else {
+          randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
+        }
+        m_vm = randomx_create_vm(flags, cache, m_dataset);
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " m_vm " << m_vm);
+        randomx_release_cache(cache);
+        cache = nullptr;
+        threads.clear();
+    } catch (std::exception &ex) {
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::createVM exception " << ex.what());
+    } catch (...) {
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::createVM unknown exception");
     }
-    uint32_t datasetItemCount = randomx_dataset_item_count();
-    if (initThreadCount > 1) {
-      auto perThread = datasetItemCount / initThreadCount;
-      auto remainder = datasetItemCount % initThreadCount;
-      uint32_t startItem = 0;
-      for (auto i = 0; i < initThreadCount; ++i) {
-        auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-        threads.push_back(std::thread(&randomx_init_dataset, m_dataset, cache, startItem, count));
-        startItem += count;
-      }
-      for (auto i = 0; i < threads.size(); ++i) {
-        threads[i].join();
-      }
-    }
-    else {
-      randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
-    }
-    m_vm = randomx_create_vm(flags, cache, m_dataset);
-    randomx_release_cache(cache);
-    cache = nullptr;
-    threads.clear();
 }
 
 void CPUMiner::destroyVM()
 {
-    randomx_destroy_vm(m_vm);
-    randomx_release_dataset(m_dataset);
+    if (m_vm != nullptr) {
+        randomx_destroy_vm(m_vm);
+    }
+    if (m_dataset != nullptr) {
+        randomx_release_dataset(m_dataset);
+    }
 }
 
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
@@ -179,56 +190,12 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
 
 CPUMiner::~CPUMiner()
 {
+    destroyVM();
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
     stopWorking();
     kick_miner();
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
-    destroyVM();
 }
-
-
-/*
- * Bind the current thread to a spcific CPU
- */
-bool CPUMiner::initDevice()
-{
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice begin");
-
-    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.cuName
-           << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
-
-#if defined(__APPLE__) || defined(__MACOSX)
-/* Not supported on MAC OSX. See https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/ */
-#elif defined(__linux__)
-    cpu_set_t cpuset;
-    int err;
-
-    CPU_ZERO(&cpuset);
-    CPU_SET(m_deviceDescriptor.cpCpuNumer, &cpuset);
-
-    err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
-    if (err != 0)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno)
-              << "\"\n";
-        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
-              << "\n";
-    }
-#else
-    DWORD_PTR dwThreadAffinityMask = 1i64 << m_deviceDescriptor.cpCpuNumer;
-    DWORD_PTR previous_mask;
-    previous_mask = SetThreadAffinityMask(GetCurrentThread(), dwThreadAffinityMask);
-    if (previous_mask == NULL)
-    {
-        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
-              << "\n";
-        // Handle Errorcode (GetLastError) ??
-    }
-#endif
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice end");
-    return true;
-}
-
 
 /*
  * A new epoch was receifed with last work package (called from Miner::initEpoch())
@@ -273,7 +240,6 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
     constexpr size_t blocksize = 30;
 
     const auto& context = ethash::get_global_epoch_context_full(w.epoch);
-    const auto header = ethash::hash256_from_bytes(w.header.data());
     const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
@@ -291,14 +257,11 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         const uint64_t end_nonce = nonce + blocksize;
         for (uint64_t n = nonce; n < end_nonce; ++n)
         {
-            uint8_t init_data[sizeof(header) + sizeof(n)];
-            std::memcpy(&init_data[0], &header, sizeof(header));
-            std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
-
             char hash[RANDOMX_HASH_SIZE] = {};
-            randomx_calculate_hash(m_vm, init_data, sizeof init_data, &hash);
+            randomx_calculate_hash(m_vm, &n, sizeof n, &hash);
             auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
             if (is_less_or_equal(final_hash, boundary)) {
+                DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::search is less or equal");
                 h256 mix{reinterpret_cast<byte*>(final_hash.bytes), h256::ConstructFromPointer};
                 auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
                 cpulog << EthWhite << "Job: " << w.header.abridged()
@@ -324,9 +287,6 @@ void CPUMiner::workLoop()
 
     WorkPackage current;
     current.header = h256();
-
-    if (!initDevice())
-        return;
 
     while (!shouldStop())
     {

@@ -169,35 +169,23 @@ struct CPUChannel : public LogChannel
 };
 #define cpulog clog(CPUChannel)
 
-void CPUMiner::createVM()
-{
-}
-
-void CPUMiner::destroyVM()
-{
-    auto dataset = getDataset();
-    if (dataset != nullptr) {
-        randomx_release_dataset(dataset);
-    }
-    if (m_vm != nullptr) {
-        randomx_destroy_vm(m_vm);
-    }
-}
-
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
-  : Miner("cpu-", _index), m_settings(_settings), m_vm(NULL)
+  : Miner("cpu-", _index), m_settings(_settings), m_vm(nullptr)
 {
     m_deviceDescriptor = _device;
-    createVM();
+
+    auto dataset = getDataset();
+    auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
+    m_vm = randomx_create_vm(flags, nullptr, dataset);
 }
 
 
 CPUMiner::~CPUMiner()
 {
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
-    destroyVM();
     stopWorking();
     kick_miner();
+    randomx_destroy_vm(m_vm);
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
 }
 
@@ -343,6 +331,9 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             break;
         }
 
+        if (!initDevice())
+            return;
+
         if (shouldStop())
             break;
 
@@ -431,7 +422,8 @@ void CPUMiner::workLoop()
 
 void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
 {
-    auto numDevices = std::thread::hardware_concurrency();
+    unsigned numDevices = getNumDevices();
+
     for (auto i = 0; i < numDevices; i++)
     {
         string uniqueId;

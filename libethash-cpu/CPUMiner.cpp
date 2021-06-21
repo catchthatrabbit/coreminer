@@ -174,9 +174,10 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
 {
     m_deviceDescriptor = _device;
 
-    auto dataset = getDataset();
-    auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
-    m_vm = randomx_create_vm(flags, nullptr, dataset);
+    auto dataset = getRandomyDataset();
+    if (dataset) {
+        m_vm = randomx_create_vm(getRandomyFlags(), nullptr, dataset);
+    }
 }
 
 
@@ -185,7 +186,15 @@ CPUMiner::~CPUMiner()
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
     stopWorking();
     kick_miner();
-    randomx_destroy_vm(m_vm);
+
+    if (m_vm != nullptr) {
+        randomx_destroy_vm(m_vm);
+    }
+
+    auto dataset = getRandomyDataset();
+    if (dataset != nullptr) {
+        randomx_release_dataset(dataset);
+    }
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
 }
 
@@ -266,53 +275,50 @@ static bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b)
     return true;
 }
 
-randomx_dataset* CPUMiner::getDataset() {
-    try {
-        static randomx_dataset* dataset = nullptr;
-        if (dataset == nullptr) {
-            std::vector<std::thread> threads;
-            auto initThreadCount = std::thread::hardware_concurrency();
-            auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
-            auto cache = randomx_alloc_cache(flags);
-            if (cache == nullptr) {
-              DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
-              return nullptr;
-            }
+randomx_flags CPUMiner::getRandomyFlags() {
+    return randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
+}
 
-            randomx_init_cache(cache, 0, 0);
-            dataset = randomx_alloc_dataset(flags);
-            if (dataset == nullptr) {
-              DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset dataset is nullptr");
-              return nullptr;
-            }
-            uint32_t datasetItemCount = randomx_dataset_item_count();
-            if (initThreadCount > 1) {
-              auto perThread = datasetItemCount / initThreadCount;
-              auto remainder = datasetItemCount % initThreadCount;
-              uint32_t startItem = 0;
-              for (auto i = 0; i < initThreadCount; ++i) {
-                auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-                threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startItem, count));
-                startItem += count;
-              }
-              for (auto i = 0; i < threads.size(); ++i) {
-                threads[i].join();
-              }
-            }
-            else {
-              randomx_init_dataset(dataset, cache, 0, datasetItemCount);
-            }
-            randomx_release_cache(cache);
-            cache = nullptr;
-            threads.clear();
+randomx_dataset* CPUMiner::getRandomyDataset() {
+    static randomx_dataset* dataset = nullptr;
+    if (dataset == nullptr) {
+        std::vector<std::thread> threads;
+        auto initThreadCount = std::thread::hardware_concurrency();
+        auto flags = getRandomyFlags();
+        auto cache = randomx_alloc_cache(flags);
+        if (cache == nullptr) {
+          DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
+          return nullptr;
         }
-    } catch (std::exception &ex) {
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner exception " << ex.what());
-    } catch (...) {
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner unknown exception");
+
+        randomx_init_cache(cache, 0, 0);
+        dataset = randomx_alloc_dataset(flags);
+        if (dataset == nullptr) {
+          DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset dataset is nullptr");
+          return nullptr;
+        }
+        uint32_t datasetItemCount = randomx_dataset_item_count();
+        if (initThreadCount > 1) {
+          auto perThread = datasetItemCount / initThreadCount;
+          auto remainder = datasetItemCount % initThreadCount;
+          uint32_t startItem = 0;
+          for (auto i = 0; i < initThreadCount; ++i) {
+            auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+            threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startItem, count));
+            startItem += count;
+          }
+          for (auto i = 0; i < threads.size(); ++i) {
+            threads[i].join();
+          }
+        }
+        else {
+          randomx_init_dataset(dataset, cache, 0, datasetItemCount);
+        }
+        randomx_release_cache(cache);
+        cache = nullptr;
+        threads.clear();
     }
-
-
+    return dataset;
 }
 
 void CPUMiner::search(const dev::eth::WorkPackage& w)
@@ -330,7 +336,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             m_new_work.store(false, std::memory_order_relaxed);
             break;
         }
-        
+
         if (shouldStop())
             break;
 
@@ -424,7 +430,7 @@ void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollectio
 {
     unsigned numDevices = getNumDevices();
 
-    for (auto i = 0; i < numDevices; i++)
+    for (unsigned i = 0; i < numDevices; i++)
     {
         string uniqueId;
         ostringstream s;

@@ -44,9 +44,6 @@ protected:
     void kick_miner() override;
 
 private:
-    void createVM();
-    void destroyVM();
-
     atomic<bool> m_new_work = {false};
     void workLoop() override;
     CPSettings m_settings;

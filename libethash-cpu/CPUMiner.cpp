@@ -330,10 +330,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             m_new_work.store(false, std::memory_order_relaxed);
             break;
         }
-
-        if (!initDevice())
-            return;
-
+        
         if (shouldStop())
             break;
 
@@ -374,6 +371,9 @@ void CPUMiner::workLoop()
 
     WorkPackage current;
     current.header = h256();
+
+    if (!initDevice())
+        return;
 
     while (!shouldStop())
     {

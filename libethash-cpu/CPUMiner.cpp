@@ -116,6 +116,50 @@ static size_t getTotalPhysAvailableMemory()
 #endif
 }
 
+/*
+ * return numbers of available CPUs
+ */
+unsigned CPUMiner::getNumDevices()
+{
+#if 0
+    static unsigned cpus = 0;
+
+    if (cpus == 0)
+    {
+        std::vector< boost::fibers::numa::node > topo = boost::fibers::numa::topology();
+        for (auto n : topo) {
+            cpus += n.logical_cpus.size();
+        }
+    }
+    return cpus;
+#elif defined(__APPLE__) || defined(__MACOSX)
+    unsigned int cpus_available = std::thread::hardware_concurrency();
+    if (cpus_available <= 0)
+    {
+        cwarn << "Error in func " << __FUNCTION__ << " at std::thread::hardware_concurrency \""
+              << cpus_available << " were found." << "\"\n";
+        return 0;
+    }
+    return cpus_available;
+
+#elif defined(__linux__)
+    long cpus_available;
+    cpus_available = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpus_available == -1L)
+    {
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \""
+              << strerror(errno) << "\"\n";
+        return 0;
+    }
+    return cpus_available;
+#else
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    return sysinfo.dwNumberOfProcessors;
+#endif
+}
+
+
 /* ######################## CPU Miner ######################## */
 
 struct CPUChannel : public LogChannel
@@ -127,60 +171,21 @@ struct CPUChannel : public LogChannel
 
 void CPUMiner::createVM()
 {
-    try {
-        std::vector<std::thread> threads;
-        auto initThreadCount = std::thread::hardware_concurrency();
-        auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
-        auto cache = randomx_alloc_cache(flags);
-        if (cache == nullptr) {
-          return;
-        }
-
-        randomx_init_cache(cache, 0, 0);
-        m_dataset = randomx_alloc_dataset(flags);
-        if (m_dataset == nullptr) {
-          return;
-        }
-        uint32_t datasetItemCount = randomx_dataset_item_count();
-        if (initThreadCount > 1) {
-          auto perThread = datasetItemCount / initThreadCount;
-          auto remainder = datasetItemCount % initThreadCount;
-          uint32_t startItem = 0;
-          for (auto i = 0; i < initThreadCount; ++i) {
-            auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-            threads.push_back(std::thread(&randomx_init_dataset, m_dataset, cache, startItem, count));
-            startItem += count;
-          }
-          for (auto i = 0; i < threads.size(); ++i) {
-            threads[i].join();
-          }
-        }
-        else {
-          randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
-        }
-        m_vm = randomx_create_vm(flags, cache, m_dataset);
-        randomx_release_cache(cache);
-        cache = nullptr;
-        threads.clear();
-    } catch (std::exception &ex) {
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::createVM exception " << ex.what());
-    } catch (...) {
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::createVM unknown exception");
-    }
 }
 
 void CPUMiner::destroyVM()
 {
+    auto dataset = getDataset();
+    if (dataset != nullptr) {
+        randomx_release_dataset(dataset);
+    }
     if (m_vm != nullptr) {
         randomx_destroy_vm(m_vm);
-    }
-    if (m_dataset != nullptr) {
-        randomx_release_dataset(m_dataset);
     }
 }
 
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
-  : Miner("cpu-", _index), m_settings(_settings), m_vm(NULL), m_dataset(NULL)
+  : Miner("cpu-", _index), m_settings(_settings), m_vm(NULL)
 {
     m_deviceDescriptor = _device;
     createVM();
@@ -189,11 +194,50 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
 
 CPUMiner::~CPUMiner()
 {
-    destroyVM();
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
+    destroyVM();
     stopWorking();
     kick_miner();
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
+}
+
+bool CPUMiner::initDevice()
+{
+    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice begin");
+
+    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.cuName
+           << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
+
+#if defined(__APPLE__) || defined(__MACOSX)
+/* Not supported on MAC OSX. See https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/ */
+#elif defined(__linux__)
+    cpu_set_t cpuset;
+    int err;
+
+    CPU_ZERO(&cpuset);
+    CPU_SET(m_deviceDescriptor.cpCpuNumer, &cpuset);
+
+    err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
+    if (err != 0)
+    {
+        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno)
+              << "\"\n";
+        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
+              << "\n";
+    }
+#else
+    DWORD_PTR dwThreadAffinityMask = 1i64 << m_deviceDescriptor.cpCpuNumer;
+    DWORD_PTR previous_mask;
+    previous_mask = SetThreadAffinityMask(GetCurrentThread(), dwThreadAffinityMask);
+    if (previous_mask == NULL)
+    {
+        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
+              << "\n";
+        // Handle Errorcode (GetLastError) ??
+    }
+#endif
+    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice end");
+    return true;
 }
 
 /*
@@ -222,7 +266,7 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
-bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexcept
+static bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexcept
 {
     for (size_t i = 0; i < (sizeof(a) / sizeof(a.word64s[0])); ++i)
     {
@@ -234,15 +278,64 @@ bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexce
     return true;
 }
 
+randomx_dataset* CPUMiner::getDataset() {
+    try {
+        static randomx_dataset* dataset = nullptr;
+        if (dataset == nullptr) {
+            std::vector<std::thread> threads;
+            auto initThreadCount = std::thread::hardware_concurrency();
+            auto flags = randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
+            auto cache = randomx_alloc_cache(flags);
+            if (cache == nullptr) {
+              DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
+              return nullptr;
+            }
+
+            randomx_init_cache(cache, 0, 0);
+            dataset = randomx_alloc_dataset(flags);
+            if (dataset == nullptr) {
+              DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset dataset is nullptr");
+              return nullptr;
+            }
+            uint32_t datasetItemCount = randomx_dataset_item_count();
+            if (initThreadCount > 1) {
+              auto perThread = datasetItemCount / initThreadCount;
+              auto remainder = datasetItemCount % initThreadCount;
+              uint32_t startItem = 0;
+              for (auto i = 0; i < initThreadCount; ++i) {
+                auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+                threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startItem, count));
+                startItem += count;
+              }
+              for (auto i = 0; i < threads.size(); ++i) {
+                threads[i].join();
+              }
+            }
+            else {
+              randomx_init_dataset(dataset, cache, 0, datasetItemCount);
+            }
+            randomx_release_cache(cache);
+            cache = nullptr;
+            threads.clear();
+        }
+    } catch (std::exception &ex) {
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner exception " << ex.what());
+    } catch (...) {
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner unknown exception");
+    }
+
+
+}
+
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
     constexpr size_t blocksize = 30;
 
-    const auto& context = ethash::get_global_epoch_context_full(w.epoch);
+    const auto header = ethash::hash256_from_bytes(w.header.data());
     const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
-    while (true)
+    while (true && m_vm != nullptr)
     {
         if (m_new_work.load(std::memory_order_relaxed))  // new work arrived ?
         {
@@ -256,8 +349,12 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         const uint64_t end_nonce = nonce + blocksize;
         for (uint64_t n = nonce; n < end_nonce; ++n)
         {
+             uint8_t init_data[sizeof(header) + sizeof(n)];
+             std::memcpy(&init_data[0], &header, sizeof(header));
+             std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
+
             char hash[RANDOMX_HASH_SIZE] = {};
-            randomx_calculate_hash(m_vm, &n, sizeof n, &hash);
+            randomx_calculate_hash(m_vm, &init_data, sizeof n, &hash);
             auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
             if (is_less_or_equal(final_hash, boundary)) {
                 DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " found hash");

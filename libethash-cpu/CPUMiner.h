@@ -32,10 +32,14 @@ class CPUMiner : public Miner
 public:
     CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device);
     ~CPUMiner() override;
+
+    static unsigned getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
+    static randomx_dataset* getDataset();
     void search(const dev::eth::WorkPackage& w);
 
 protected:
+    bool initDevice() override;
     bool initEpoch_internal() override;
     void kick_miner() override;
 
@@ -47,7 +51,6 @@ private:
     void workLoop() override;
     CPSettings m_settings;
     randomx_vm *m_vm;
-    randomx_dataset *m_dataset;
 };
 
 

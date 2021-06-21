@@ -422,6 +422,11 @@ public:
 
 protected:
     /**
+     * @brief Initializes miner's device.
+     */
+    virtual bool initDevice() = 0;
+
+    /**
      * @brief Initializes miner to current (or changed) epoch.
      */
     bool initEpoch();

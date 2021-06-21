@@ -159,7 +159,6 @@ void CPUMiner::createVM()
           randomx_init_dataset(m_dataset, cache, 0, datasetItemCount);
         }
         m_vm = randomx_create_vm(flags, cache, m_dataset);
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " m_vm " << m_vm);
         randomx_release_cache(cache);
         cache = nullptr;
         threads.clear();
@@ -261,7 +260,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             randomx_calculate_hash(m_vm, &n, sizeof n, &hash);
             auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
             if (is_less_or_equal(final_hash, boundary)) {
-                DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::search is less or equal");
+                DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " found hash");
                 h256 mix{reinterpret_cast<byte*>(final_hash.bytes), h256::ConstructFromPointer};
                 auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
                 cpulog << EthWhite << "Job: " << w.header.abridged()

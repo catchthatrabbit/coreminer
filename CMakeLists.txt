@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-
 include(cmake/cable/bootstrap.cmake)
 
 include(CableBuildInfo)
@@ -21,6 +20,8 @@ HunterGate(
 
 project(ethminer)
 set(PROJECT_VERSION 0.19.0)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 

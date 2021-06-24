@@ -39,8 +39,8 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "CPUMiner.h"
+#include "picosha3.h"
 #include "RandomY/src/randomx.h"
-
 
 /* Sanity check for defined OS */
 #if defined(__APPLE__) || defined(__MACOSX)
@@ -53,7 +53,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #else
 #error "Invalid OS configuration"
 #endif
-
 
 using namespace std;
 using namespace dev;
@@ -263,6 +262,19 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
+static std::string to_hex(const ethash::hash256 h)
+{
+    static const auto hex_chars = "0123456789abcdef";
+    std::string str;
+    str.reserve(sizeof(h) * 2);
+    for (auto b : h.bytes)
+    {
+        str.push_back(hex_chars[uint8_t(b) >> 4]);
+        str.push_back(hex_chars[uint8_t(b) & 0xf]);
+    }
+    return str;
+}
+
 static bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexcept
 {
     for (size_t i = 0; i < (sizeof(a) / sizeof(a.word64s[0])); ++i)
@@ -271,6 +283,8 @@ static bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b)
             return false;
         if (a.word64s[i] < b.word64s[i])
             return true;
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "hash a " << to_hex(a));
+        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "hash b " << to_hex(b));
     }
     return true;
 }
@@ -321,6 +335,7 @@ randomx_dataset* CPUMiner::getRandomyDataset() {
     return dataset;
 }
 
+
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
     constexpr size_t blocksize = 30;
@@ -343,16 +358,22 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         const uint64_t end_nonce = nonce + blocksize;
         for (uint64_t n = nonce; n < end_nonce; ++n)
         {
-             uint8_t init_data[sizeof(header) + sizeof(n)];
-             std::memcpy(&init_data[0], &header, sizeof(header));
-             std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
+            uint8_t init_data[sizeof(header) + sizeof(n)];
+            std::memcpy(&init_data[0], &header, sizeof(header));
+            std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
+            std::vector<uint8_t> input(std::begin(init_data), std::end(init_data));
+
+            auto sha3_512 = picosha3::get_sha3_generator<512>();
+            std::array<uint8_t, picosha3::bits_to_bytes(512)> seed{};
+            sha3_512(input.begin(), input.end(), seed.begin(), seed.end());
 
             char hash[RANDOMX_HASH_SIZE] = {};
-            randomx_calculate_hash(m_vm, &init_data, sizeof init_data, &hash);
+            randomx_calculate_hash(m_vm, seed.data(), seed.size(), &hash);
             auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
+
             if (is_less_or_equal(final_hash, boundary)) {
                 DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " found hash");
-                h256 mix{reinterpret_cast<byte*>(final_hash.bytes), h256::ConstructFromPointer};
+                h256 mix{reinterpret_cast<dev::byte*>(final_hash.bytes), h256::ConstructFromPointer};
                 auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
                 cpulog << EthWhite << "Job: " << w.header.abridged()
                        << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;

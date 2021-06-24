@@ -20,7 +20,6 @@
 #include "CommonData.h"
 #include "Exceptions.h"
 
-using namespace std;
 using namespace dev;
 
 int dev::fromHex(char _i, WhenError _throw)
@@ -108,7 +107,7 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
             size_t precision = (ldiff - 1) - offset;
 
             // Effective sequence of decimal places
-            string decimals = sdiff.substr(offset + 1);
+            std::string decimals = sdiff.substr(offset + 1);
 
             // Strip leading zeroes. If a string begins with
             // 0 or 0x boost parser considers it hex
@@ -116,7 +115,7 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
 
             // Build up the divisor as string - just in case
             // parser does some implicit conversion with 10^precision
-            string decimalDivisor = "1";
+            std::string decimalDivisor = "1";
             decimalDivisor.resize(precision + 1, '0');
 
             // This is the multiplier for the decimal part
@@ -136,16 +135,16 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
     }
 
     // Normalize to 64 chars hex with "0x" prefix
-    stringstream ss;
-    ss << (_prefix == HexPrefix::Add ? "0x" : "") << setw(64) << setfill('0') << std::hex
+    std::stringstream ss;
+    ss << (_prefix == HexPrefix::Add ? "0x" : "") << std::setw(64) << std::setfill('0') << std::hex
        << product;
 
-    string target = ss.str();
+    std::string target = ss.str();
     boost::algorithm::to_lower(target);
     return target;
 }
 
-double dev::getHashesToTarget(string _target)
+double dev::getHashesToTarget(std::string _target)
 {
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
@@ -156,7 +155,7 @@ double dev::getHashesToTarget(string _target)
     return double(dividend / divisor);
 }
 
-std::string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[],
+std::string dev::getScaledSize(double _value, double _divisor, int _precision, std::string _sizes[],
     size_t _numsizes, ScaleSuffix _suffix)
 {
     double _newvalue = _value;
@@ -168,7 +167,7 @@ std::string dev::getScaledSize(double _value, double _divisor, int _precision, s
     }
 
     std::stringstream _ret;
-    _ret << fixed << setprecision(_precision) << _newvalue;
+    _ret << std::fixed << std::setprecision(_precision) << _newvalue;
     if (_suffix == ScaleSuffix::Add)
         _ret << " " << _sizes[i];
     return _ret.str();
@@ -176,13 +175,13 @@ std::string dev::getScaledSize(double _value, double _divisor, int _precision, s
 
 std::string dev::getFormattedHashes(double _hr, ScaleSuffix _suffix, int _precision)
 {
-    static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
+    static std::string suffixes[] = {"h", "Kh", "Mh", "Gh"};
     return dev::getScaledSize(_hr, 1000.0, _precision, suffixes, 4, _suffix);
 }
 
 std::string dev::getFormattedMemory(double _mem, ScaleSuffix _suffix, int _precision)
 {
-    static string suffixes[] = {"B", "KB", "MB", "GB"};
+    static std::string suffixes[] = {"B", "KB", "MB", "GB"};
     return dev::getScaledSize(_mem, 1024.0, _precision, suffixes, 4, _suffix);
 }
 

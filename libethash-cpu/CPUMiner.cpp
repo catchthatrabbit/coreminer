@@ -348,7 +348,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
              std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
 
             char hash[RANDOMX_HASH_SIZE] = {};
-            randomx_calculate_hash(m_vm, &init_data, sizeof n, &hash);
+            randomx_calculate_hash(m_vm, &init_data, sizeof init_data, &hash);
             auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
             if (is_less_or_equal(final_hash, boundary)) {
                 DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " found hash");

@@ -1290,6 +1290,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             // or if a job for this transmission has already
             // been processed
             if (!isSubscribed() || m_newjobprocessed)
+                cout << "tut";
                 return;
 
             /*

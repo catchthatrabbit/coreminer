@@ -40,6 +40,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "CPUMiner.h"
 #include "picosha3.h"
+#include "endian.hpp"
 #include "RandomY/src/randomx.h"
 
 /* Sanity check for defined OS */
@@ -57,6 +58,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace dev;
 using namespace eth;
+using namespace ethash;
 
 /* ################## OS-specific functions ################## */
 
@@ -262,7 +264,7 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
-static std::string to_hex(const ethash::hash256 h)
+static std::string to_hex(const hash256 h)
 {
     static const auto hex_chars = "0123456789abcdef";
     std::string str;
@@ -275,16 +277,14 @@ static std::string to_hex(const ethash::hash256 h)
     return str;
 }
 
-static bool is_less_or_equal(const ethash::hash256& a, const ethash::hash256& b) noexcept
+static bool is_less_or_equal(const hash256& a, const hash256& b) noexcept
 {
     for (size_t i = 0; i < (sizeof(a) / sizeof(a.word64s[0])); ++i)
     {
-        if (a.word64s[i] > b.word64s[i])
+        if (be::uint64(a.word64s[i]) > be::uint64(b.word64s[i]))
             return false;
-        if (a.word64s[i] < b.word64s[i])
+        if (be::uint64(a.word64s[i]) < be::uint64(b.word64s[i]))
             return true;
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "hash a " << to_hex(a));
-        DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "hash b " << to_hex(b));
     }
     return true;
 }
@@ -340,8 +340,8 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
     constexpr size_t blocksize = 30;
 
-    const auto header = ethash::hash256_from_bytes(w.header.data());
-    const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
+    const auto header = hash256_from_bytes(w.header.data());
+    const auto boundary = hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
     while (true && m_vm != nullptr)
@@ -358,9 +358,10 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         const uint64_t end_nonce = nonce + blocksize;
         for (uint64_t n = nonce; n < end_nonce; ++n)
         {
-            uint8_t init_data[sizeof(header) + sizeof(n)];
-            std::memcpy(&init_data[0], &header, sizeof(header));
-            std::memcpy(&init_data[sizeof(header)], &n, sizeof(n));
+            auto twisted = le::uint64(n);
+            uint8_t init_data[sizeof header + sizeof twisted];
+            std::memcpy(&init_data[0], &header, sizeof header);
+            std::memcpy(&init_data[sizeof header], &twisted, sizeof twisted);
             std::vector<uint8_t> input(std::begin(init_data), std::end(init_data));
 
             auto sha3_512 = picosha3::get_sha3_generator<512>();
@@ -369,12 +370,11 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
 
             char hash[RANDOMX_HASH_SIZE] = {};
             randomx_calculate_hash(m_vm, seed.data(), seed.size(), &hash);
-            auto final_hash = ethash::hash256_from_bytes((const uint8_t*)hash);
+            auto final_hash = hash256_from_bytes((const uint8_t*)hash);
 
             if (is_less_or_equal(final_hash, boundary)) {
-                DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " found hash");
                 h256 mix{reinterpret_cast<dev::byte*>(final_hash.bytes), h256::ConstructFromPointer};
-                auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
+                auto sol = Solution{twisted, mix, w, std::chrono::steady_clock::now(), m_index};
                 cpulog << EthWhite << "Job: " << w.header.abridged()
                        << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
                 Farm::f().submitProof(sol);
@@ -466,7 +466,7 @@ void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollectio
 
         s.str("");
         s.clear();
-        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
+        s << "eval()/boost " << (BOOST_VERSION / 100000) << "."
           << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
         deviceDescriptor.name = s.str();
         deviceDescriptor.uniqueId = uniqueId;

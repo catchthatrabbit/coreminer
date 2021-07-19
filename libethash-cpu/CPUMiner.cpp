@@ -177,7 +177,8 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
 
     auto dataset = getRandomyDataset();
     if (dataset) {
-        m_vm = randomx_create_vm(getRandomyFlags(), nullptr, dataset);
+        auto flags = getRandomyFlags();
+        m_vm = randomx_create_vm(flags, nullptr, dataset);
     }
 }
 
@@ -290,7 +291,7 @@ static bool is_less_or_equal(const hash256& a, const hash256& b) noexcept
 }
 
 randomx_flags CPUMiner::getRandomyFlags() {
-    return randomx_get_flags() | RANDOMX_FLAG_FULL_MEM;
+    return RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_FULL_MEM;
 }
 
 randomx_dataset* CPUMiner::getRandomyDataset() {
@@ -305,7 +306,8 @@ randomx_dataset* CPUMiner::getRandomyDataset() {
           return nullptr;
         }
 
-        randomx_init_cache(cache, 0, 0);
+        unsigned char coreKey[] = {53, 54, 55, 56, 57};
+        randomx_init_cache(cache, &coreKey, sizeof coreKey);
         dataset = randomx_alloc_dataset(flags);
         if (dataset == nullptr) {
           DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset dataset is nullptr");

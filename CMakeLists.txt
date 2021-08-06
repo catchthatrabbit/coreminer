@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-
 include(cmake/cable/bootstrap.cmake)
 
 include(CableBuildInfo)
@@ -21,6 +20,8 @@ HunterGate(
 
 project(ethminer)
 set(PROJECT_VERSION 0.19.0)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 
@@ -35,12 +36,6 @@ option(USE_SYS_OPENCL "Build with system OpenCL" OFF)
 
 # propagates CMake configuration options to the compiler
 function(configureProject)
-    if (ETHASHCL)
-        add_definitions(-DETH_ETHASHCL)
-    endif()
-    if (ETHASHCUDA)
-        add_definitions(-DETH_ETHASHCUDA)
-    endif()
     if (ETHASHCPU)
         add_definitions(-DETH_ETHASHCPU)
     endif()
@@ -56,9 +51,6 @@ function(configureProject)
     if (DEVBUILD)
         add_definitions(-DDEV_BUILD)
     endif()
-    if (USE_SYS_OPENCL)
-        add_definitions(-DUSE_SYS_OPENCL)
-    endif()
 endfunction()
 
 hunter_add_package(Boost COMPONENTS system filesystem thread)
@@ -72,22 +64,15 @@ find_package(ethash CONFIG REQUIRED)
 
 configureProject()
 
-if(APPLE)
-    set(USE_SYS_OPENCL ON)
-endif()
-
 message("----------------------------------------------------------------------------")
 message("-- CMake ${CMAKE_VERSION}")
 message("-- Build ${CMAKE_BUILD_TYPE} / ${CMAKE_SYSTEM_NAME}")
 message("----------------------------------------------------------------- components")
-message("-- ETHASHCL         Build OpenCL components                      ${ETHASHCL}")
-message("-- ETHASHCUDA       Build CUDA components                        ${ETHASHCUDA}")
 message("-- ETHASHCPU        Build CPU components (only for development)  ${ETHASHCPU}")
 message("-- ETHDBUS          Build D-Bus components                       ${ETHDBUS}")
 message("-- APICORE          Build API Server components                  ${APICORE}")
 message("-- BINKERN          Install AMD binary kernels                   ${BINKERN}")
 message("-- DEVBUILD         Build with dev logging                       ${DEVBUILD}")
-message("-- USE_SYS_OPENCL   Build with system OpenCL                     ${USE_SYS_OPENCL}")
 message("----------------------------------------------------------------------------")
 message("")
 
@@ -102,16 +87,8 @@ add_subdirectory(libdevcore)
 add_subdirectory(libethcore)
 add_subdirectory(libhwmon)
 add_subdirectory(libpoolprotocols)
+add_subdirectory(RandomY)
 
-if (ETHASHCL)
-    add_subdirectory(libethash-cl)
-    if (BINKERN)
-        add_subdirectory(libethash-cl/kernels)
-    endif()
-endif ()
-if (ETHASHCUDA)
-    add_subdirectory(libethash-cuda)
-endif ()
 if (ETHASHCPU)
     add_subdirectory(libethash-cpu)
 endif ()

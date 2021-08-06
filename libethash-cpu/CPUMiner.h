@@ -20,7 +20,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #include <libdevcore/Worker.h>
 #include <libethcore/EthashAux.h>
 #include <libethcore/Miner.h>
-
+#include <RandomY/src/randomx.h>
 #include <functional>
 
 namespace dev
@@ -35,7 +35,8 @@ public:
 
     static unsigned getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
-
+    static randomx_dataset* getRandomyDataset();
+    static randomx_flags getRandomyFlags();
     void search(const dev::eth::WorkPackage& w);
 
 protected:
@@ -47,6 +48,7 @@ private:
     atomic<bool> m_new_work = {false};
     void workLoop() override;
     CPSettings m_settings;
+    randomx_vm *m_vm;
 };
 
 

@@ -31,7 +31,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <libethcore/Farm.h>
 #include <ethash/ethash.hpp>
-
 #include <boost/version.hpp>
 
 #if 0
@@ -40,7 +39,9 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "CPUMiner.h"
-
+#include "picosha3.h"
+#include "endian.hpp"
+#include "RandomY/src/randomx.h"
 
 /* Sanity check for defined OS */
 #if defined(__APPLE__) || defined(__MACOSX)
@@ -54,11 +55,10 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #error "Invalid OS configuration"
 #endif
 
-
 using namespace std;
 using namespace dev;
 using namespace eth;
-
+using namespace ethash;
 
 /* ################## OS-specific functions ################## */
 
@@ -170,11 +170,16 @@ struct CPUChannel : public LogChannel
 };
 #define cpulog clog(CPUChannel)
 
-
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
-  : Miner("cpu-", _index), m_settings(_settings)
+  : Miner("cpu-", _index), m_settings(_settings), m_vm(nullptr)
 {
     m_deviceDescriptor = _device;
+
+    auto dataset = getRandomyDataset();
+    if (dataset) {
+        auto flags = getRandomyFlags();
+        m_vm = randomx_create_vm(flags, nullptr, dataset);
+    }
 }
 
 
@@ -183,13 +188,18 @@ CPUMiner::~CPUMiner()
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
     stopWorking();
     kick_miner();
+
+    if (m_vm != nullptr) {
+        randomx_destroy_vm(m_vm);
+    }
+
+    auto dataset = getRandomyDataset();
+    if (dataset != nullptr) {
+        randomx_release_dataset(dataset);
+    }
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
 }
 
-
-/*
- * Bind the current thread to a spcific CPU
- */
 bool CPUMiner::initDevice()
 {
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice begin");
@@ -229,7 +239,6 @@ bool CPUMiner::initDevice()
     return true;
 }
 
-
 /*
  * A new epoch was receifed with last work package (called from Miner::initEpoch())
  *
@@ -256,17 +265,88 @@ void CPUMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
+static std::string to_hex(const hash256 h)
+{
+    static const auto hex_chars = "0123456789abcdef";
+    std::string str;
+    str.reserve(sizeof(h) * 2);
+    for (auto b : h.bytes)
+    {
+        str.push_back(hex_chars[uint8_t(b) >> 4]);
+        str.push_back(hex_chars[uint8_t(b) & 0xf]);
+    }
+    return str;
+}
+
+static bool is_less_or_equal(const hash256& a, const hash256& b) noexcept
+{
+    for (size_t i = 0; i < (sizeof(a) / sizeof(a.word64s[0])); ++i)
+    {
+        if (be::uint64(a.word64s[i]) > be::uint64(b.word64s[i]))
+            return false;
+        if (be::uint64(a.word64s[i]) < be::uint64(b.word64s[i]))
+            return true;
+    }
+    return true;
+}
+
+randomx_flags CPUMiner::getRandomyFlags() {
+    return RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_FULL_MEM;
+}
+
+randomx_dataset* CPUMiner::getRandomyDataset() {
+    static randomx_dataset* dataset = nullptr;
+    if (dataset == nullptr) {
+        std::vector<std::thread> threads;
+        auto initThreadCount = std::thread::hardware_concurrency();
+        auto flags = getRandomyFlags();
+        auto cache = randomx_alloc_cache(flags);
+        if (cache == nullptr) {
+          DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
+          return nullptr;
+        }
+
+        unsigned char coreKey[] = {53, 54, 55, 56, 57};
+        randomx_init_cache(cache, &coreKey, sizeof coreKey);
+        dataset = randomx_alloc_dataset(flags);
+        if (dataset == nullptr) {
+          DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset dataset is nullptr");
+          return nullptr;
+        }
+        uint32_t datasetItemCount = randomx_dataset_item_count();
+        if (initThreadCount > 1) {
+          auto perThread = datasetItemCount / initThreadCount;
+          auto remainder = datasetItemCount % initThreadCount;
+          uint32_t startItem = 0;
+          for (auto i = 0; i < initThreadCount; ++i) {
+            auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+            threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startItem, count));
+            startItem += count;
+          }
+          for (auto i = 0; i < threads.size(); ++i) {
+            threads[i].join();
+          }
+        }
+        else {
+          randomx_init_dataset(dataset, cache, 0, datasetItemCount);
+        }
+        randomx_release_cache(cache);
+        cache = nullptr;
+        threads.clear();
+    }
+    return dataset;
+}
+
 
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
     constexpr size_t blocksize = 30;
 
-    const auto& context = ethash::get_global_epoch_context_full(w.epoch);
-    const auto header = ethash::hash256_from_bytes(w.header.data());
-    const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
+    const auto header = hash256_from_bytes(w.header.data());
+    const auto boundary = hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
-    while (true)
+    while (true && m_vm != nullptr)
     {
         if (m_new_work.load(std::memory_order_relaxed))  // new work arrived ?
         {
@@ -277,17 +357,32 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         if (shouldStop())
             break;
 
-
-        auto r = ethash::search(context, header, boundary, nonce, blocksize);
-        if (r.solution_found)
+        const uint64_t end_nonce = nonce + blocksize;
+        for (uint64_t n = nonce; n < end_nonce; ++n)
         {
-            h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
-            auto sol = Solution{r.nonce, mix, w, std::chrono::steady_clock::now(), m_index};
+            auto twisted = le::uint64(n);
+            uint8_t init_data[sizeof header + sizeof twisted];
+            std::memcpy(&init_data[0], &header, sizeof header);
+            std::memcpy(&init_data[sizeof header], &twisted, sizeof twisted);
+            std::vector<uint8_t> input(std::begin(init_data), std::end(init_data));
 
-            cpulog << EthWhite << "Job: " << w.header.abridged()
-                   << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
-            Farm::f().submitProof(sol);
+            auto sha3_512 = picosha3::get_sha3_generator<512>();
+            std::array<uint8_t, picosha3::bits_to_bytes(512)> seed{};
+            sha3_512(input.begin(), input.end(), seed.begin(), seed.end());
+
+            char hash[RANDOMX_HASH_SIZE] = {};
+            randomx_calculate_hash(m_vm, seed.data(), seed.size(), &hash);
+            auto final_hash = hash256_from_bytes((const uint8_t*)hash);
+
+            if (is_less_or_equal(final_hash, boundary)) {
+                h256 mix{reinterpret_cast<dev::byte*>(final_hash.bytes), h256::ConstructFromPointer};
+                auto sol = Solution{n, mix, w, std::chrono::steady_clock::now(), m_index};
+                cpulog << EthWhite << "Job: " << w.header.abridged()
+                       << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
+                Farm::f().submitProof(sol);
+            }
         }
+
         nonce += blocksize;
 
         // Update the hash rate
@@ -373,7 +468,7 @@ void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollectio
 
         s.str("");
         s.clear();
-        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
+        s << "eval()/boost " << (BOOST_VERSION / 100000) << "."
           << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
         deviceDescriptor.name = s.str();
         deviceDescriptor.uniqueId = uniqueId;

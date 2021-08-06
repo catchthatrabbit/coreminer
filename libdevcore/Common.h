@@ -14,11 +14,11 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
-using byte = uint8_t;
 
 namespace dev
 {
 // Binary data types.
+using byte = uint8_t;
 using bytes = std::vector<byte>;
 using bytesRef = vector_ref<byte>;
 using bytesConstRef = vector_ref<byte const>;

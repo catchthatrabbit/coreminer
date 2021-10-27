@@ -11,7 +11,7 @@ jobs:
         token: ${{secrets.CORE_TOKEN}}
     - name: Bump version
       id: version_bump
-      if: github.ref == 'refs/heads/master'
+      #if: github.ref == 'refs/heads/master'
       uses: anothrNick/github-tag-action@1.13.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

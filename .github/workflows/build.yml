@@ -21,9 +21,9 @@ jobs:
     - name: docker login
       run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
     - name: docker build
-      run: docker build . -t ghcr.io/core-coin/go-core/gocore:${{steps.version_bump.outputs.tag}} -t ghcr.io/core-coin/go-core/gocore:latest
+      run: docker build . -t ghcr.io/core-coin/go-core/ethminer:${{steps.version_bump.outputs.tag}} -t ghcr.io/core-coin/go-core/ethminer:latest
     - name: docker push
-      run: docker push --all-tags ghcr.io/core-coin/go-core/gocore
+      run: docker push --all-tags ghcr.io/core-coin/go-core/ethminer
   build:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'

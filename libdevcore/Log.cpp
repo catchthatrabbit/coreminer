@@ -80,7 +80,7 @@ ThreadLocalLogName g_logThreadName("main");
 
 string dev::getThreadName()
 {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(pthread_getname_np) && defined(__linux__) || defined(__APPLE__)
     char buffer[128];
     pthread_getname_np(pthread_self(), buffer, 127);
     buffer[127] = 0;

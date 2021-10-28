@@ -24,7 +24,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #if !defined(_GNU_SOURCE)
 #define _GNU_SOURCE /* we need sched_setaffinity() */
 #endif
-#include <error.h>
 #include <sched.h>
 #include <unistd.h>
 #endif
@@ -51,8 +50,6 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 /* linux */
 #elif defined(_WIN32)
 /* windows */
-#else
-#error "Invalid OS configuration"
 #endif
 
 using namespace std;

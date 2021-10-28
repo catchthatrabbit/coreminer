@@ -19,7 +19,7 @@ jobs:
         RELEASE_BRANCHES: "feature/cicd-coreminer"
         WITH_V: true
     - name: docker login
-      run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+      run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
     - name: docker build
       run: docker build . -t ghcr.io/core-coin/go-core/gocore:${{steps.version_bump.outputs.tag}} -t ghcr.io/core-coin/go-core/gocore:latest
     - name: docker push

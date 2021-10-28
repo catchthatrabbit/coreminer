@@ -11,6 +11,7 @@ jobs:
         submodules: recursive
         token: ${{secrets.SECRET_TOKEN}}
     - name: Bump version
+      id: version_bump
       uses: anothrNick/github-tag-action@1.13.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

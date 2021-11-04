@@ -21,9 +21,9 @@ jobs:
     - name: docker login
       run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
     - name: docker build
-      run: docker build . -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{steps.version_bump.outputs.tag}} -t ghcr.io/catchthatrabbit/ethminer/coreminer:latest
+      run: docker build . -t ghcr.io/catchthatrabbit/ethminer:${{steps.version_bump.outputs.tag}} -t ghcr.io/catchthatrabbit/ethminer:latest
     - name: docker push
-      run: docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer
+      run: docker push --all-tags ghcr.io/catchthatrabbit/ethminer
   build:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'

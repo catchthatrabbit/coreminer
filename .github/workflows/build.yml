@@ -19,11 +19,11 @@ jobs:
         RELEASE_BRANCHES: "master"
         WITH_V: true
     - name: docker login
-      run: docker login docker.pkg.github.com -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
+      run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
     - name: docker build
-      run: docker build . -t docker.pkg.github.com/catchthatrabbit/ethminer/coreminer:${{steps.version_bump.outputs.tag}} -t docker.pkg.github.com/catchthatrabbit/ethminer/coreminer:latest
+      run: docker build . -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{steps.version_bump.outputs.tag}} -t ghcr.io/catchthatrabbit/ethminer/coreminer:latest
     - name: docker push
-      run: docker push --all-tags docker.pkg.github.com/catchthatrabbit/ethminer/coreminer
+      run: docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer
   build:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'

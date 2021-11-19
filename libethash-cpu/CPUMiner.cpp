@@ -170,13 +170,16 @@ struct CPUChannel : public LogChannel
 CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
   : Miner("cpu-", _index), m_settings(_settings), m_vm(nullptr)
 {
+    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::CPUMiner() begin");
     m_deviceDescriptor = _device;
 
-    auto dataset = getRandomyDataset();
+    auto dataset = getRandomYDataset();
     if (dataset) {
-        auto flags = getRandomyFlags();
+        auto flags = getRandomYFlags();
         m_vm = randomx_create_vm(flags, nullptr, dataset);
     }
+
+    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::CPUMiner() begin");
 }
 
 
@@ -190,10 +193,6 @@ CPUMiner::~CPUMiner()
         randomx_destroy_vm(m_vm);
     }
 
-    auto dataset = getRandomyDataset();
-    if (dataset != nullptr) {
-        randomx_release_dataset(dataset);
-    }
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
 }
 
@@ -287,16 +286,16 @@ static bool is_less_or_equal(const hash256& a, const hash256& b) noexcept
     return true;
 }
 
-randomx_flags CPUMiner::getRandomyFlags() {
+randomx_flags CPUMiner::getRandomYFlags() {
     return RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_FULL_MEM;
 }
 
-randomx_dataset* CPUMiner::getRandomyDataset() {
+randomx_dataset* CPUMiner::getRandomYDataset() {
     static randomx_dataset* dataset = nullptr;
     if (dataset == nullptr) {
         std::vector<std::thread> threads;
         auto initThreadCount = std::thread::hardware_concurrency();
-        auto flags = getRandomyFlags();
+        auto flags = getRandomYFlags();
         auto cache = randomx_alloc_cache(flags);
         if (cache == nullptr) {
           DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
@@ -334,6 +333,12 @@ randomx_dataset* CPUMiner::getRandomyDataset() {
     return dataset;
 }
 
+void CPUMiner::releaseRandomYDataset() {
+    auto dataset = getRandomYDataset();
+    if (dataset != nullptr) {
+        randomx_release_dataset(dataset);
+    }
+}
 
 void CPUMiner::search(const dev::eth::WorkPackage& w)
 {

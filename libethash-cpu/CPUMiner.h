@@ -35,8 +35,9 @@ public:
 
     static unsigned getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
-    static randomx_dataset* getRandomyDataset();
-    static randomx_flags getRandomyFlags();
+    static randomx_dataset* getRandomYDataset();
+    static void releaseRandomYDataset();
+    static randomx_flags getRandomYFlags();
     void search(const dev::eth::WorkPackage& w);
 
 protected:

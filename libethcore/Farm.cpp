@@ -156,6 +156,7 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
     m_collectTimer.async_wait(
         m_io_strand.wrap(boost::bind(&Farm::collectData, this, boost::asio::placeholders::error)));
 
+    CPUMiner::getRandomYDataset();
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::Farm() end");
 }
 
@@ -181,6 +182,7 @@ Farm::~Farm()
     if (m_isMining.load(std::memory_order_relaxed))
         stop();
 
+    CPUMiner::releaseRandomYDataset();
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::~Farm() end");
 }
 

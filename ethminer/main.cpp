@@ -25,15 +25,7 @@
 #endif
 
 #include <libethcore/Farm.h>
-#if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
-#endif
-#if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
-#endif
-#if ETH_ETHASHCPU
 #include <libethash-cpu/CPUMiner.h>
-#endif
 #include <libpoolprotocols/PoolManager.h>
 
 #if API_CORE
@@ -191,16 +183,7 @@ public:
 
         app.add_set("-H,--help-ext", shelpExt,
             {
-                "con", "test",
-#if ETH_ETHASHCL
-                    "cl",
-#endif
-#if ETH_ETHASHCUDA
-                    "cu",
-#endif
-#if ETH_ETHASHCPU
-                    "cp",
-#endif
+                "con", "test", "cp",
 #if API_CORE
                     "api",
 #endif
@@ -273,51 +256,8 @@ public:
 
 #endif
 
-#if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
-
         app.add_flag("--list-devices", m_shouldListDevices, "");
-
-#endif
-
-#if ETH_ETHASHCL
-
-        app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
-
-        app.add_option("--cl-global-work", m_CLSettings.globalWorkSize, "", true);
-
-        app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
-
-        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
-
-        app.add_flag("--cl-noexit", m_CLSettings.noExit, "");
-
-#endif
-
-#if ETH_ETHASHCUDA
-
-        app.add_option("--cuda-devices,--cu-devices", m_CUSettings.devices, "");
-
-        app.add_option("--cuda-grid-size,--cu-grid-size", m_CUSettings.gridSize, "", true)
-            ->check(CLI::Range(1, 131072));
-
-        app.add_set(
-            "--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256}, "", true);
-
-        string sched = "sync";
-        app.add_set(
-            "--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
-
-        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
-            ->check(CLI::Range(1, 99));
-
-#endif
-
-#if ETH_ETHASHCPU
-
         app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
-
-#endif
-
         app.add_flag("--noeval", m_FarmSettings.noEval, "");
 
         app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
@@ -329,9 +269,7 @@ public:
         app.add_flag("-U,--cuda", cuda_miner, "");
 
         bool cpu_miner = false;
-#if ETH_ETHASHCPU
         app.add_flag("--cpu", cpu_miner, "");
-#endif
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
@@ -370,16 +308,7 @@ public:
 
 #endif
 
-
-        if (cl_miner)
-            m_minerType = MinerType::CL;
-        else if (cuda_miner)
-            m_minerType = MinerType::CUDA;
-        else if (cpu_miner)
-            m_minerType = MinerType::CPU;
-        else
-            m_minerType = MinerType::Mixed;
-
+        m_minerType = MinerType::CPU;
         /*
             Operation mode Simulation do not require pool definitions
             Operation mode Stratum or GetWork do need at least one

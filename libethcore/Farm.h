@@ -31,16 +31,7 @@
 
 #include <libdevcore/Common.h>
 #include <libdevcore/Worker.h>
-
 #include <libethcore/Miner.h>
-
-#include <libhwmon/wrapnvml.h>
-#if defined(__linux)
-#include <libhwmon/wrapamdsysfs.h>
-#include <sys/stat.h>
-#else
-#include <libhwmon/wrapadl.h>
-#endif
 
 extern boost::asio::io_service g_io_service;
 
@@ -52,10 +43,7 @@ struct FarmSettings
 {
     unsigned dagLoadMode = 0;  // 0 = Parallel; 1 = Serialized
     bool noEval = false;       // Whether or not to re-evaluate solutions
-    unsigned hwMon = 0;        // 0 - No monitor; 1 - Temp and Fan; 2 - Temp Fan Power
     unsigned ergodicity = 0;   // 0=default, 1=per session, 2=per job
-    unsigned tempStart = 40;   // Temperature threshold to restart mining (if paused)
-    unsigned tempStop = 0;     // Temperature threshold to pause mining (overheating)
 };
 
 /**
@@ -66,11 +54,8 @@ struct FarmSettings
 class Farm : public FarmFace
 {
 public:
-    unsigned tstart = 0, tstop = 0;
-
     Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
-        FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings,
-        CPSettings _CPSettings);
+        FarmSettings _settings, CPSettings _CPSettings);
 
     ~Farm();
 
@@ -229,12 +214,6 @@ public:
      */
     Json::Value get_nonce_scrambler_json();
 
-    void setTStartTStop(unsigned tstart, unsigned tstop);
-
-    unsigned get_tstart() override { return m_Settings.tempStart; }
-
-    unsigned get_tstop() override { return m_Settings.tempStop; }
-
     unsigned get_ergodicity() override { return m_Settings.ergodicity; }
 
     /**
@@ -273,8 +252,6 @@ private:
     MinerRestart m_onMinerRestart;
 
     FarmSettings m_Settings;  // Own Farm Settings
-    CUSettings m_CUSettings;  // Cuda settings passed to CUDA Miner instantiator
-    CLSettings m_CLSettings;  // OpenCL settings passed to CL Miner instantiator
     CPSettings m_CPSettings;  // CPU settings passed to CPU Miner instantiator
 
     boost::asio::io_service::strand m_io_strand;
@@ -290,18 +267,6 @@ private:
     // before it consumes the whole 2^32 segment
     uint64_t m_nonce_scrambler;
     unsigned int m_nonce_segment_with = 32;
-
-    // Wrappers for hardware monitoring libraries and their mappers
-    wrap_nvml_handle* nvmlh = nullptr;
-    std::map<string, int> map_nvml_handle = {};
-
-#if defined(__linux)
-    wrap_amdsysfs_handle* sysfsh = nullptr;
-    std::map<string, int> map_amdsysfs_handle = {};
-#else
-    wrap_adl_handle* adlh = nullptr;
-    std::map<string, int> map_adl_handle = {};
-#endif
 
     static Farm* m_this;
     std::map<std::string, DeviceDescriptor>& m_DevicesCollection;

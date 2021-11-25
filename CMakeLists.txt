@@ -85,7 +85,6 @@ cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
 add_subdirectory(libdevcore)
 add_subdirectory(libethcore)
-add_subdirectory(libhwmon)
 add_subdirectory(libpoolprotocols)
 add_subdirectory(RandomY)
 

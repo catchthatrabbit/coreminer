@@ -1028,19 +1028,13 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(
     DeviceDescriptor minerDescriptor = _miner->getDescriptor();
 
     jRes["_index"] = _index;
-    jRes["_mode"] =
-        (minerDescriptor.subscriptionType == DeviceSubscriptionTypeEnum::Cuda ? "CUDA" : "OpenCL");
 
     /* Hardware Info */
     Json::Value hwinfo;
     hwinfo["pci"] = minerDescriptor.uniqueId;
-    hwinfo["type"] =
-        (minerDescriptor.type == DeviceTypeEnum::Gpu ?
-                "GPU" :
-                (minerDescriptor.type == DeviceTypeEnum::Accelerator ? "ACCELERATOR" : "CPU"));
+    hwinfo["type"] = "CPU";
     ostringstream ss;
-    ss << (minerDescriptor.clDetected ? minerDescriptor.clName : minerDescriptor.cuName) << " "
-       << dev::getFormattedMemory((double)minerDescriptor.totalMemory);
+    ss << "CPU" << " " << dev::getFormattedMemory((double)minerDescriptor.totalMemory);
     hwinfo["name"] = ss.str();
 
     /* Hardware Sensors*/
@@ -1255,27 +1249,13 @@ Json::Value ApiConnection::getMinerStatDetail()
                                                                 // found share
     mininginfo["shares"] = sharesinfo;
 
-    /* Monitors Info */
-    Json::Value monitorinfo;
-    auto tstop = Farm::f().get_tstop();
-    if (tstop)
-    {
-        Json::Value tempsinfo = Json::Value(Json::arrayValue);
-        tempsinfo.append(Farm::f().get_tstart());
-        tempsinfo.append(tstop);
-        monitorinfo["temperatures"] = tempsinfo;
-    }
-
     /* Devices related info */
     for (shared_ptr<Miner> miner : Farm::f().getMiners())
         devices.append(getMinerStatDetailPerMiner(t, miner));
 
     jRes["devices"] = devices;
-
-    jRes["monitors"] = monitorinfo;
     jRes["connection"] = connectioninfo;
     jRes["host"] = hostinfo;
     jRes["mining"] = mininginfo;
-
     return jRes;
 }

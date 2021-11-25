@@ -217,8 +217,6 @@ public:
         app.add_option("--display-interval", m_cliDisplayInterval, "", true)
             ->check(CLI::Range(1, 1800));
 
-        app.add_option("--HWMON", m_FarmSettings.hwMon, "", true)->check(CLI::Range(0, 2));
-
         app.add_flag("--exit", g_exitOnError, "");
 
         vector<string> pools;
@@ -271,10 +269,6 @@ public:
         bool cpu_miner = false;
         app.add_flag("--cpu", cpu_miner, "");
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
-
-        app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
-        app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
-
 
         // Exception handling is held at higher level
         app.parse(argc, argv);
@@ -364,18 +358,6 @@ public:
             }
         }
 
-
-        if (m_FarmSettings.tempStop)
-        {
-            // If temp threshold set HWMON at least to 1
-            m_FarmSettings.hwMon = std::max((unsigned int)m_FarmSettings.hwMon, 1U);
-            if (m_FarmSettings.tempStop <= m_FarmSettings.tempStart)
-            {
-                std::string what = "-tstop must be greater than -tstart";
-                throw std::invalid_argument(what);
-            }
-        }
-
         // Output warnings if any
         if (warnings.size())
         {
@@ -421,12 +403,6 @@ public:
                 {
                 case DeviceTypeEnum::Cpu:
                     cout << "Cpu";
-                    break;
-                case DeviceTypeEnum::Gpu:
-                    cout << "Gpu";
-                    break;
-                case DeviceTypeEnum::Accelerator:
-                    cout << "Acc";
                     break;
                 default:
                     break;
@@ -485,7 +461,7 @@ public:
         signal(SIGTERM, MinerCLI::signalHandler);
 
         // Initialize Farm
-        new Farm(m_DevicesCollection, m_FarmSettings, m_CUSettings, m_CLSettings, m_CPSettings);
+        new Farm(m_DevicesCollection, m_FarmSettings, m_CPSettings);
 
         // Run Miner
         doMiner();
@@ -803,7 +779,7 @@ private:
     std::map<std::string, DeviceDescriptor> m_DevicesCollection = {};
 
     // Mining options
-    MinerType m_minerType = MinerType::Mixed;
+    MinerType m_minerType = MinerType::CPU;
     OperationMode m_mode = OperationMode::None;
     bool m_shouldListDevices = false;
 

@@ -194,7 +194,6 @@ and expect back a response like this:
     "devices": [                                        // Array subscribed of devices
       {
         "_index": 0,                                    // Miner ordinal 
-        "_mode": "CUDA",                                // Miner mode : "OpenCL" / "CUDA"
         "hardware": {                                   // Device hardware info
           "name": "GeForce GTX 1050 Ti 3.95 GB",        // Name
           "pci": "01:00.0",                             // Pci Id

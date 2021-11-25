@@ -4,18 +4,14 @@
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
 [![Releases](https://img.shields.io/github/downloads/ethereum-mining/ethminer/total.svg)][Releases]
 
-> Ethereum miner with OpenCL, CUDA and stratum support
+> Ethereum miner with stratum support
 
 **Ethminer** is an Ethash GPU mining worker: with ethminer you can mine every coin which relies on an Ethash Proof of Work thus including Ethereum, Ethereum Classic, Metaverse, Musicoin, Ellaism, Pirl, Expanse and others. This is the actively maintained version of ethminer. It originates from [cpp-ethereum] project (where GPU mining has been discontinued) and builds on the improvements made in [Genoil's fork]. See [FAQ](#faq) for more details.
 
 ## Features
 
-* OpenCL mining
-* Nvidia CUDA mining
 * realistic benchmarking against arbitrary epoch/DAG/blocknumber
-* on-GPU DAG generation (no more DAG files on disk)
 * stratum mining without proxy
-* OpenCL devices picking
 * farm failover (getwork + stratum)
 
 
@@ -72,8 +68,6 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 | [AppVeyor]    | Windows       | [![AppVeyor](https://img.shields.io/appveyor/ci/ethereum-mining/ethminer/master.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and branches |
 
 The AppVeyor system automatically builds a Windows .exe for every commit. The latest version is always available [on the landing page](https://ci.appveyor.com/project/ethereum-mining/ethminer) or you can [browse the history](https://ci.appveyor.com/project/ethereum-mining/ethminer/history) to access previous builds.
-
-To download the .exe on a build under `Job name` select the CUDA version you use, choose `Artifacts` then download the zip file.
 
 ### Building from source
 

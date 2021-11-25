@@ -17,18 +17,7 @@
 
 
 #include <libethcore/Farm.h>
-
-#if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
-#endif
-
-#if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
-#endif
-
-#if ETH_ETHASHCPU
 #include <libethash-cpu/CPUMiner.h>
-#endif
 
 namespace dev
 {
@@ -37,10 +26,8 @@ namespace eth
 Farm* Farm::m_this = nullptr;
 
 Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
-    FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings, CPSettings _CPSettings)
+    FarmSettings _settings, CPSettings _CPSettings)
   : m_Settings(std::move(_settings)),
-    m_CUSettings(std::move(_CUSettings)),
-    m_CLSettings(std::move(_CLSettings)),
     m_CPSettings(std::move(_CPSettings)),
     m_io_strand(g_io_service),
     m_collectTimer(g_io_service),
@@ -49,102 +36,6 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::Farm() begin");
 
     m_this = this;
-
-    // Init HWMON if needed
-    if (m_Settings.hwMon)
-    {
-        m_telemetry.hwmon = true;
-
-#if defined(__linux)
-        bool need_sysfsh = false;
-#else
-        bool need_adlh = false;
-#endif
-        bool need_nvmlh = false;
-
-        // Scan devices collection to identify which hw monitors to initialize
-        for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-        {
-            if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
-            {
-                need_nvmlh = true;
-                continue;
-            }
-            if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
-            {
-                if (it->second.clPlatformType == ClPlatformTypeEnum::Nvidia)
-                {
-                    need_nvmlh = true;
-                    continue;
-                }
-                if (it->second.clPlatformType == ClPlatformTypeEnum::Amd)
-                {
-#if defined(__linux)
-                    need_sysfsh = true;
-#else
-                    need_adlh = true;
-#endif
-                    continue;
-                }
-            }
-        }
-
-#if defined(__linux)
-        if (need_sysfsh)
-            sysfsh = wrap_amdsysfs_create();
-        if (sysfsh)
-        {
-            // Build Pci identification mapping as done in miners.
-            for (int i = 0; i < sysfsh->sysfs_gpucount; i++)
-            {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)sysfsh->sysfs_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
-                uniqueId = oss.str();
-                map_amdsysfs_handle[uniqueId] = i;
-            }
-        }
-
-#else
-        if (need_adlh)
-            adlh = wrap_adl_create();
-        if (adlh)
-        {
-            // Build Pci identification as done in miners.
-            for (int i = 0; i < adlh->adl_gpucount; i++)
-            {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":"
-                    << std::setw(2)
-                    << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber)
-                    << ".0";
-                uniqueId = oss.str();
-                map_adl_handle[uniqueId] = i;
-            }
-        }
-
-#endif
-        if (need_nvmlh)
-            nvmlh = wrap_nvml_create();
-        if (nvmlh)
-        {
-            // Build Pci identification as done in miners.
-            for (int i = 0; i < nvmlh->nvml_gpucount; i++)
-            {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)nvmlh->nvml_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
-                uniqueId = oss.str();
-                map_nvml_handle[uniqueId] = i;
-            }
-        }
-    }
 
     // Initialize nonce_scrambler
     shuffle();
@@ -166,17 +57,6 @@ Farm::~Farm()
 
     // Stop data collector (before monitors !!!)
     m_collectTimer.cancel();
-
-    // Deinit HWMON
-#if defined(__linux)
-    if (sysfsh)
-        wrap_amdsysfs_destroy(sysfsh);
-#else
-    if (adlh)
-        wrap_adl_destroy(adlh);
-#endif
-    if (nvmlh)
-        wrap_nvml_destroy(nvmlh);
 
     // Stop mining (if needed)
     if (m_isMining.load(std::memory_order_relaxed))
@@ -264,32 +144,12 @@ bool Farm::start()
         for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
         {
             TelemetryAccountType minerTelemetry;
-#if ETH_ETHASHCUDA
-            if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
-            {
-                minerTelemetry.prefix = "cu";
-                m_miners.push_back(std::shared_ptr<Miner>(
-                    new CUDAMiner(m_miners.size(), m_CUSettings, it->second)));
-            }
-#endif
-#if ETH_ETHASHCL
-
-            if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
-            {
-                minerTelemetry.prefix = "cl";
-                m_miners.push_back(std::shared_ptr<Miner>(
-                    new CLMiner(m_miners.size(), m_CLSettings, it->second)));
-            }
-#endif
-#if ETH_ETHASHCPU
-
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cpu)
             {
                 minerTelemetry.prefix = "cp";
                 m_miners.push_back(std::shared_ptr<Miner>(
                     new CPUMiner(m_miners.size(), m_CPSettings, it->second)));
             }
-#endif
             if (minerTelemetry.prefix.empty())
                 continue;
             m_telemetry.miners.push_back(minerTelemetry);
@@ -479,12 +339,6 @@ Json::Value Farm::get_nonce_scrambler_json()
     return jRes;
 }
 
-void Farm::setTStartTStop(unsigned tstart, unsigned tstop)
-{
-    m_Settings.tempStart = tstart;
-    m_Settings.tempStop = tstop;
-}
-
 void Farm::submitProof(Solution const& _s)
 {
     g_io_service.post(m_io_strand.wrap(boost::bind(&Farm::submitProofAsync, this, _s)));
@@ -534,116 +388,6 @@ void Farm::collectData(const boost::system::error_code& ec)
         farm_hr += hr;
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
-
-
-        if (m_Settings.hwMon)
-        {
-            HwMonitorInfo hwInfo = miner->hwmonInfo();
-
-            unsigned int tempC = 0, fanpcnt = 0, powerW = 0;
-
-            if (hwInfo.deviceType == HwMonitorInfoType::NVIDIA && nvmlh)
-            {
-                int devIdx = hwInfo.deviceIndex;
-                if (devIdx == -1 && !hwInfo.devicePciId.empty())
-                {
-                    if (map_nvml_handle.find(hwInfo.devicePciId) != map_nvml_handle.end())
-                    {
-                        devIdx = map_nvml_handle[hwInfo.devicePciId];
-                        miner->setHwmonDeviceIndex(devIdx);
-                    }
-                    else
-                    {
-                        // This will prevent further tries to map
-                        miner->setHwmonDeviceIndex(-2);
-                    }
-                }
-
-                if (devIdx >= 0)
-                {
-                    wrap_nvml_get_tempC(nvmlh, devIdx, &tempC);
-                    wrap_nvml_get_fanpcnt(nvmlh, devIdx, &fanpcnt);
-
-                    if (m_Settings.hwMon == 2)
-                        wrap_nvml_get_power_usage(nvmlh, devIdx, &powerW);
-                }
-            }
-            else if (hwInfo.deviceType == HwMonitorInfoType::AMD)
-            {
-#if defined(__linux)
-                if (sysfsh)
-                {
-                    int devIdx = hwInfo.deviceIndex;
-                    if (devIdx == -1 && !hwInfo.devicePciId.empty())
-                    {
-                        if (map_amdsysfs_handle.find(hwInfo.devicePciId) !=
-                            map_amdsysfs_handle.end())
-                        {
-                            devIdx = map_amdsysfs_handle[hwInfo.devicePciId];
-                            miner->setHwmonDeviceIndex(devIdx);
-                        }
-                        else
-                        {
-                            // This will prevent further tries to map
-                            miner->setHwmonDeviceIndex(-2);
-                        }
-                    }
-
-                    if (devIdx >= 0)
-                    {
-                        wrap_amdsysfs_get_tempC(sysfsh, devIdx, &tempC);
-                        wrap_amdsysfs_get_fanpcnt(sysfsh, devIdx, &fanpcnt);
-
-                        if (m_Settings.hwMon == 2)
-                            wrap_amdsysfs_get_power_usage(sysfsh, devIdx, &powerW);
-                    }
-                }
-#else
-                if (adlh)  // Windows only for AMD
-                {
-                    int devIdx = hwInfo.deviceIndex;
-                    if (devIdx == -1 && !hwInfo.devicePciId.empty())
-                    {
-                        if (map_adl_handle.find(hwInfo.devicePciId) != map_adl_handle.end())
-                        {
-                            devIdx = map_adl_handle[hwInfo.devicePciId];
-                            miner->setHwmonDeviceIndex(devIdx);
-                        }
-                        else
-                        {
-                            // This will prevent further tries to map
-                            miner->setHwmonDeviceIndex(-2);
-                        }
-                    }
-
-                    if (devIdx >= 0)
-                    {
-                        wrap_adl_get_tempC(adlh, devIdx, &tempC);
-                        wrap_adl_get_fanpcnt(adlh, devIdx, &fanpcnt);
-
-                        if (m_Settings.hwMon == 2)
-                            wrap_adl_get_power_usage(adlh, devIdx, &powerW);
-                    }
-                }
-#endif
-            }
-
-
-            // If temperature control has been enabled call
-            // check threshold
-            if (m_Settings.tempStop)
-            {
-                bool paused = miner->pauseTest(MinerPauseEnum::PauseDueToOverHeating);
-                if (!paused && (tempC >= m_Settings.tempStop))
-                    miner->pause(MinerPauseEnum::PauseDueToOverHeating);
-                if (paused && (tempC <= m_Settings.tempStart))
-                    miner->resume(MinerPauseEnum::PauseDueToOverHeating);
-            }
-
-            m_telemetry.miners.at(minerIdx).sensors.tempC = tempC;
-            m_telemetry.miners.at(minerIdx).sensors.fanP = fanpcnt;
-            m_telemetry.miners.at(minerIdx).sensors.powerW = powerW / ((double)1000.0);
-        }
         m_telemetry.farm.hashrate = farm_hr;
         miner->TriggerHashRateUpdate();
     }

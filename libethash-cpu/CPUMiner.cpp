@@ -200,7 +200,7 @@ bool CPUMiner::initDevice()
 {
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice begin");
 
-    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.cuName
+    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer
            << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
 #if defined(__APPLE__) || defined(__MACOSX)

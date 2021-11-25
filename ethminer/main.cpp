@@ -25,15 +25,7 @@
 #endif
 
 #include <libethcore/Farm.h>
-#if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
-#endif
-#if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
-#endif
-#if ETH_ETHASHCPU
 #include <libethash-cpu/CPUMiner.h>
-#endif
 #include <libpoolprotocols/PoolManager.h>
 
 #if API_CORE
@@ -191,16 +183,7 @@ public:
 
         app.add_set("-H,--help-ext", shelpExt,
             {
-                "con", "test",
-#if ETH_ETHASHCL
-                    "cl",
-#endif
-#if ETH_ETHASHCUDA
-                    "cu",
-#endif
-#if ETH_ETHASHCPU
-                    "cp",
-#endif
+                "con", "test", "cp",
 #if API_CORE
                     "api",
 #endif
@@ -233,8 +216,6 @@ public:
 
         app.add_option("--display-interval", m_cliDisplayInterval, "", true)
             ->check(CLI::Range(1, 1800));
-
-        app.add_option("--HWMON", m_FarmSettings.hwMon, "", true)->check(CLI::Range(0, 2));
 
         app.add_flag("--exit", g_exitOnError, "");
 
@@ -273,51 +254,8 @@ public:
 
 #endif
 
-#if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
-
         app.add_flag("--list-devices", m_shouldListDevices, "");
-
-#endif
-
-#if ETH_ETHASHCL
-
-        app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
-
-        app.add_option("--cl-global-work", m_CLSettings.globalWorkSize, "", true);
-
-        app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
-
-        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
-
-        app.add_flag("--cl-noexit", m_CLSettings.noExit, "");
-
-#endif
-
-#if ETH_ETHASHCUDA
-
-        app.add_option("--cuda-devices,--cu-devices", m_CUSettings.devices, "");
-
-        app.add_option("--cuda-grid-size,--cu-grid-size", m_CUSettings.gridSize, "", true)
-            ->check(CLI::Range(1, 131072));
-
-        app.add_set(
-            "--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256}, "", true);
-
-        string sched = "sync";
-        app.add_set(
-            "--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
-
-        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
-            ->check(CLI::Range(1, 99));
-
-#endif
-
-#if ETH_ETHASHCPU
-
         app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
-
-#endif
-
         app.add_flag("--noeval", m_FarmSettings.noEval, "");
 
         app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
@@ -329,14 +267,8 @@ public:
         app.add_flag("-U,--cuda", cuda_miner, "");
 
         bool cpu_miner = false;
-#if ETH_ETHASHCPU
         app.add_flag("--cpu", cpu_miner, "");
-#endif
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
-
-        app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
-        app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
-
 
         // Exception handling is held at higher level
         app.parse(argc, argv);
@@ -370,16 +302,7 @@ public:
 
 #endif
 
-
-        if (cl_miner)
-            m_minerType = MinerType::CL;
-        else if (cuda_miner)
-            m_minerType = MinerType::CUDA;
-        else if (cpu_miner)
-            m_minerType = MinerType::CPU;
-        else
-            m_minerType = MinerType::Mixed;
-
+        m_minerType = MinerType::CPU;
         /*
             Operation mode Simulation do not require pool definitions
             Operation mode Stratum or GetWork do need at least one
@@ -435,29 +358,6 @@ public:
             }
         }
 
-
-#if ETH_ETHASHCUDA
-        if (sched == "auto")
-            m_CUSettings.schedule = 0;
-        else if (sched == "spin")
-            m_CUSettings.schedule = 1;
-        else if (sched == "yield")
-            m_CUSettings.schedule = 2;
-        else if (sched == "sync")
-            m_CUSettings.schedule = 4;
-#endif
-
-        if (m_FarmSettings.tempStop)
-        {
-            // If temp threshold set HWMON at least to 1
-            m_FarmSettings.hwMon = std::max((unsigned int)m_FarmSettings.hwMon, 1U);
-            if (m_FarmSettings.tempStop <= m_FarmSettings.tempStart)
-            {
-                std::string what = "-tstop must be greater than -tstart";
-                throw std::invalid_argument(what);
-            }
-        }
-
         // Output warnings if any
         if (warnings.size())
         {
@@ -473,20 +373,9 @@ public:
 
     void execute()
     {
-#if ETH_ETHASHCL
-        if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-            CLMiner::enumDevices(m_DevicesCollection);
-#endif
-#if ETH_ETHASHCUDA
-        if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            CUDAMiner::enumDevices(m_DevicesCollection);
-#endif
-#if ETH_ETHASHCPU
         if (m_minerType == MinerType::CPU)
             CPUMiner::enumDevices(m_DevicesCollection);
-#endif
 
-        // Can't proceed without any GPU
         if (!m_DevicesCollection.size())
             throw std::runtime_error("No usable mining devices found");
 
@@ -497,58 +386,11 @@ public:
             cout << setiosflags(ios::left) << setw(10) << "Pci Id    ";
             cout << setw(5) << "Type ";
             cout << setw(30) << "Name                          ";
-
-#if ETH_ETHASHCUDA
-            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            {
-                cout << setw(5) << "CUDA ";
-                cout << setw(4) << "SM  ";
-            }
-#endif
-#if ETH_ETHASHCL
-            if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-                cout << setw(5) << "CL   ";
-#endif
-            cout << resetiosflags(ios::left) << setw(13) << "Total Memory"
-                 << " ";
-#if ETH_ETHASHCL
-            if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-            {
-                cout << resetiosflags(ios::left) << setw(13) << "Cl Max Alloc"
-                     << " ";
-                cout << resetiosflags(ios::left) << setw(13) << "Cl Max W.Grp"
-                     << " ";
-            }
-#endif
-
             cout << resetiosflags(ios::left) << endl;
             cout << setw(4) << "--- ";
             cout << setiosflags(ios::left) << setw(10) << "--------- ";
             cout << setw(5) << "---- ";
             cout << setw(30) << "----------------------------- ";
-
-#if ETH_ETHASHCUDA
-            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            {
-                cout << setw(5) << "---- ";
-                cout << setw(4) << "--- ";
-            }
-#endif
-#if ETH_ETHASHCL
-            if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-                cout << setw(5) << "---- ";
-#endif
-            cout << resetiosflags(ios::left) << setw(13) << "------------"
-                 << " ";
-#if ETH_ETHASHCL
-            if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-            {
-                cout << resetiosflags(ios::left) << setw(13) << "------------"
-                     << " ";
-                cout << resetiosflags(ios::left) << setw(13) << "------------"
-                     << " ";
-            }
-#endif
             cout << resetiosflags(ios::left) << endl;
             std::map<string, DeviceDescriptor>::iterator it = m_DevicesCollection.begin();
             while (it != m_DevicesCollection.end())
@@ -562,38 +404,12 @@ public:
                 case DeviceTypeEnum::Cpu:
                     cout << "Cpu";
                     break;
-                case DeviceTypeEnum::Gpu:
-                    cout << "Gpu";
-                    break;
-                case DeviceTypeEnum::Accelerator:
-                    cout << "Acc";
-                    break;
                 default:
                     break;
                 }
                 cout << setw(30) << (it->second.name).substr(0, 28);
-#if ETH_ETHASHCUDA
-                if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-                {
-                    cout << setw(5) << (it->second.cuDetected ? "Yes" : "");
-                    cout << setw(4) << it->second.cuCompute;
-                }
-#endif
-#if ETH_ETHASHCL
-                if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-                    cout << setw(5) << (it->second.clDetected ? "Yes" : "");
-#endif
                 cout << resetiosflags(ios::left) << setw(13)
                      << getFormattedMemory((double)it->second.totalMemory) << " ";
-#if ETH_ETHASHCL
-                if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-                {
-                    cout << resetiosflags(ios::left) << setw(13)
-                         << getFormattedMemory((double)it->second.clMaxMemAlloc) << " ";
-                    cout << resetiosflags(ios::left) << setw(13)
-                         << getFormattedMemory((double)it->second.clMaxWorkGroup) << " ";
-                }
-#endif
                 cout << resetiosflags(ios::left) << endl;
                 it++;
             }
@@ -602,47 +418,7 @@ public:
         }
 
         // Subscribe devices with appropriate Miner Type
-        // Use CUDA first when available then, as second, OpenCL
-
         // Apply discrete subscriptions (if any)
-#if ETH_ETHASHCUDA
-        if (m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
-        {
-            for (auto index : m_CUSettings.devices)
-            {
-                if (index < m_DevicesCollection.size())
-                {
-                    auto it = m_DevicesCollection.begin();
-                    std::advance(it, index);
-                    if (!it->second.cuDetected)
-                        throw std::runtime_error("Can't CUDA subscribe a non-CUDA device.");
-                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
-                }
-            }
-        }
-#endif
-#if ETH_ETHASHCL
-        if (m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
-        {
-            for (auto index : m_CLSettings.devices)
-            {
-                if (index < m_DevicesCollection.size())
-                {
-                    auto it = m_DevicesCollection.begin();
-                    std::advance(it, index);
-                    if (!it->second.clDetected)
-                        throw std::runtime_error("Can't OpenCL subscribe a non-OpenCL device.");
-                    if (it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                        throw std::runtime_error(
-                            "Can't OpenCL subscribe a CUDA subscribed device.");
-                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
-                }
-            }
-        }
-#endif
-#if ETH_ETHASHCPU
         if (m_CPSettings.devices.size() && (m_minerType == MinerType::CPU))
         {
             for (auto index : m_CPSettings.devices)
@@ -655,37 +431,9 @@ public:
                 }
             }
         }
-#endif
 
 
         // Subscribe all detected devices
-#if ETH_ETHASHCUDA
-        if (!m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
-        {
-            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-            {
-                if (!it->second.cuDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                    continue;
-                it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
-            }
-        }
-#endif
-#if ETH_ETHASHCL
-        if (!m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
-        {
-            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-            {
-                if (!it->second.clDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                    continue;
-                it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
-            }
-        }
-#endif
-#if ETH_ETHASHCPU
         if (!m_CPSettings.devices.size() &&
             (m_minerType == MinerType::CPU))
         {
@@ -694,7 +442,6 @@ public:
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
             }
         }
-#endif
         // Count of subscribed devices
         int subscribedDevices = 0;
         for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
@@ -703,7 +450,6 @@ public:
                 subscribedDevices++;
         }
 
-        // If no OpenCL and/or CUDA devices subscribed then throw error
         if (!subscribedDevices)
             throw std::runtime_error("No mining device selected. Aborting ...");
 
@@ -715,7 +461,7 @@ public:
         signal(SIGTERM, MinerCLI::signalHandler);
 
         // Initialize Farm
-        new Farm(m_DevicesCollection, m_FarmSettings, m_CUSettings, m_CLSettings, m_CPSettings);
+        new Farm(m_DevicesCollection, m_FarmSettings, m_CPSettings);
 
         // Run Miner
         doMiner();
@@ -731,15 +477,7 @@ public:
              << "    By default ethminer will try to use all devices types" << endl
              << "    it can detect. Optionally you can limit this behavior" << endl
              << "    setting either of the following options" << endl
-#if ETH_ETHASHCL
-             << "    -G,--opencl         Mine/Benchmark using OpenCL only" << endl
-#endif
-#if ETH_ETHASHCUDA
-             << "    -U,--cuda           Mine/Benchmark using CUDA only" << endl
-#endif
-#if ETH_ETHASHCPU
              << "    --cpu               Development ONLY ! (NO MINING)" << endl
-#endif
              << endl
              << "Connection options :" << endl
              << endl
@@ -756,15 +494,7 @@ public:
              << endl
              << "    -h,--help           Displays this help text and exits" << endl
              << "    -H,--help-ext       TEXT {'con','test',"
-#if ETH_ETHASHCL
-             << "cl,"
-#endif
-#if ETH_ETHASHCUDA
-             << "cu,"
-#endif
-#if ETH_ETHASHCPU
              << "cp,"
-#endif
 #if API_CORE
              << "api,"
 #endif
@@ -772,15 +502,7 @@ public:
              << "                        Display help text about one of these contexts:" << endl
              << "                        'con'  Connections and their definitions" << endl
              << "                        'test' Benchmark/Simulation options" << endl
-#if ETH_ETHASHCL
-             << "                        'cl'   Extended OpenCL options" << endl
-#endif
-#if ETH_ETHASHCUDA
-             << "                        'cu'   Extended CUDA options" << endl
-#endif
-#if ETH_ETHASHCPU
              << "                        'cp'   Extended CPU options" << endl
-#endif
 #if API_CORE
              << "                        'api'  API and Http monitoring interface" << endl
 #endif
@@ -845,78 +567,6 @@ public:
                  << endl;
         }
 
-        if (ctx == "cl")
-        {
-            cout << "OpenCL Extended Options :" << endl
-                 << endl
-                 << "    Use this extended OpenCL arguments to fine tune the performance." << endl
-                 << "    Be advised default values are best generic findings by developers" << endl
-                 << endl
-                 << "    --cl-devices        UINT {} Default not set" << endl
-                 << "                        Space separated list of device indexes to use" << endl
-                 << "                        eg --cl-devices 0 2 3" << endl
-                 << "                        If not set all available CL devices will be used"
-                 << endl
-                 << "    --cl-global-work    UINT Default 65536" << endl
-                 << "                        Set the global work size multiplier" << endl
-                 << "                        Value will be adjusted to nearest power of 2" << endl
-                 << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
-                 << "                        Set the local work size multiplier" << endl
-                 << "    --cl-nobin          FLAG" << endl
-                 << "                        Use openCL kernel. Do not load binary kernel" << endl
-                 << "    --cl-noexit         FLAG" << endl
-                 << "                        Don't use fast exit algorithm" << endl;
-        }
-
-        if (ctx == "cu")
-        {
-            cout << "CUDA Extended Options :" << endl
-                 << endl
-                 << "    Use this extended CUDA arguments to fine tune the performance." << endl
-                 << "    Be advised default values are best generic findings by developers" << endl
-                 << endl
-                 << "    --cu-grid-size      INT [1 .. 131072] Default = 8192" << endl
-                 << "                        Set the grid size" << endl
-                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128" << endl
-                 << "                        Set the block size" << endl
-                 << "    --cu-devices        UINT {} Default not set" << endl
-                 << "                        Space separated list of device indexes to use" << endl
-                 << "                        eg --cu-devices 0 2 3" << endl
-                 << "                        If not set all available CUDA devices will be used"
-                 << endl
-                 << "    --cu-parallel-hash  UINT {1,2,4,8} Default = 4" << endl
-                 << "                        Set the number of hashes per kernel" << endl
-                 << "    --cu-streams        INT [1 .. 99] Default = 2" << endl
-                 << "                        Set the number of streams per GPU" << endl
-                 << "    --cu-schedule       TEXT Default = 'sync'" << endl
-                 << "                        Set the CUDA scheduler mode. Can be one of" << endl
-                 << "                        'auto'  Uses a heuristic based on the number of "
-                    "active "
-                 << endl
-                 << "                                CUDA contexts in the process (C) and the "
-                    "number"
-                 << endl
-                 << "                                of logical processors in the system (P)"
-                 << endl
-                 << "                                If C > P then 'yield' else 'spin'" << endl
-                 << "                        'spin'  Instructs CUDA to actively spin when "
-                    "waiting"
-                 << endl
-                 << "                                for results from the device" << endl
-                 << "                        'yield' Instructs CUDA to yield its thread when "
-                    "waiting for"
-                 << endl
-                 << "                                for results from the device" << endl
-                 << "                        'sync'  Instructs CUDA to block the CPU thread on "
-                    "a "
-                 << endl
-                 << "                                synchronize primitive when waiting for "
-                    "results"
-                 << endl
-                 << "                                from the device" << endl
-                 << endl;
-        }
-
         if (ctx == "cp")
         {
             cout << "CPU Extended Options :" << endl
@@ -928,102 +578,6 @@ public:
                  << "                        Space separated list of device indexes to use" << endl
                  << "                        eg --cp-devices 0 2 3" << endl
                  << "                        If not set all available CPUs will be used" << endl
-                 << endl;
-        }
-
-        if (ctx == "misc")
-        {
-            cout << "Miscellaneous Options :" << endl
-                 << endl
-                 << "    This set of options is valid for mining mode independently from" << endl
-                 << "    OpenCL or CUDA or Mixed mining mode." << endl
-                 << endl
-                 << "    --display-interval  INT[1 .. 1800] Default = 5" << endl
-                 << "                        Statistic display interval in seconds" << endl
-                 << "    --farm-recheck      INT[1 .. 99999] Default = 500" << endl
-                 << "                        Set polling interval for new work in getWork mode"
-                 << endl
-                 << "                        Value expressed in milliseconds" << endl
-                 << "                        It has no meaning in stratum mode" << endl
-                 << "    --farm-retries      INT[1 .. 99999] Default = 3" << endl
-                 << "                        Set number of reconnection retries to same pool"
-                 << endl
-                 << "    --retry-delay       INT[1 .. 999] Default = 0" << endl
-                 << "                        Delay in seconds before reconnection retry" << endl
-                 << "    --failover-timeout  INT[0 .. ] Default not set" << endl
-                 << "                        Sets the number of minutes ethminer can stay" << endl
-                 << "                        connected to a fail-over pool before trying to" << endl
-                 << "                        reconnect to the primary (the first) connection."
-                 << endl
-                 << "                        before switching to a fail-over connection" << endl
-                 << "    --work-timeout      INT[180 .. 99999] Default = 180" << endl
-                 << "                        If no new work received from pool after this" << endl
-                 << "                        amount of time the connection is dropped" << endl
-                 << "                        Value expressed in seconds." << endl
-                 << "    --response-timeout  INT[2 .. 999] Default = 2" << endl
-                 << "                        If no response from pool to a stratum message " << endl
-                 << "                        after this amount of time the connection is dropped"
-                 << endl
-                 << "    -R,--report-hr      FLAG Notify pool of effective hashing rate" << endl
-                 << "    --HWMON             INT[0 .. 2] Default = 0" << endl
-                 << "                        GPU hardware monitoring level. Can be one of:" << endl
-                 << "                        0 No monitoring" << endl
-                 << "                        1 Monitor temperature and fan percentage" << endl
-                 << "                        2 As 1 plus monitor power drain" << endl
-                 << "    --exit              FLAG Stop ethminer whenever an error is encountered"
-                 << endl
-                 << "    --ergodicity        INT[0 .. 2] Default = 0" << endl
-                 << "                        Sets how ethminer chooses the nonces segments to"
-                 << endl
-                 << "                        search on." << endl
-                 << "                        0 A search segment is picked at startup" << endl
-                 << "                        1 A search segment is picked on every pool "
-                    "connection"
-                 << endl
-                 << "                        2 A search segment is picked on every new job" << endl
-                 << endl
-                 << "    --nocolor           FLAG Monochrome display log lines" << endl
-                 << "    --syslog            FLAG Use syslog appropriate output (drop timestamp "
-                    "and"
-                 << endl
-                 << "                        channel prefix)" << endl
-                 << "    --stdout            FLAG Log to stdout instead of stderr" << endl
-                 << "    --noeval            FLAG By-pass host software re-evaluation of GPUs"
-                 << endl
-                 << "                        found nonces. Trims some ms. from submission" << endl
-                 << "                        time but it may increase rejected solution rate."
-                 << endl
-                 << "    --list-devices      FLAG Lists the detected OpenCL/CUDA devices and "
-                    "exits"
-                 << endl
-                 << "                        Must be combined with -G or -U or -X flags" << endl
-                 << "    -L,--dag-load-mode  INT[0 .. 1] Default = 0" << endl
-                 << "                        Set DAG load mode. Can be one of:" << endl
-                 << "                        0 Parallel load mode (each GPU independently)" << endl
-                 << "                        1 Sequential load mode (one GPU after another)" << endl
-                 << endl
-                 << "    --tstart            UINT[30 .. 100] Default = 0" << endl
-                 << "                        Suspend mining on GPU which temperature is above"
-                 << endl
-                 << "                        this threshold. Implies --HWMON 1" << endl
-                 << "                        If not set or zero no temp control is performed"
-                 << endl
-                 << "    --tstop             UINT[30 .. 100] Default = 40" << endl
-                 << "                        Resume mining on previously overheated GPU when "
-                    "temp"
-                 << endl
-                 << "                        drops below this threshold. Implies --HWMON 1" << endl
-                 << "                        Must be lower than --tstart" << endl
-                 << "    -v,--verbosity      INT[0 .. 255] Default = 0 " << endl
-                 << "                        Set output verbosity level. Use the sum of :" << endl
-                 << "                        1   to log stratum json messages" << endl
-                 << "                        2   to log found solutions per GPU" << endl
-#ifdef DEV_BUILD
-                 << "                        32  to log socket (dis)connections" << endl
-                 << "                        64  to log timing of job switches" << endl
-                 << "                        128 to log time for solution submission" << endl
-                 << "                        256 to log program flow" << endl
-#endif
                  << endl;
         }
 
@@ -1225,14 +779,12 @@ private:
     std::map<std::string, DeviceDescriptor> m_DevicesCollection = {};
 
     // Mining options
-    MinerType m_minerType = MinerType::Mixed;
+    MinerType m_minerType = MinerType::CPU;
     OperationMode m_mode = OperationMode::None;
     bool m_shouldListDevices = false;
 
     FarmSettings m_FarmSettings;  // Operating settings for Farm
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
-    CLSettings m_CLSettings;          // Operating settings for CL Miners
-    CUSettings m_CUSettings;          // Operating settings for CUDA Miners
     CPSettings m_CPSettings;          // Operating settings for CPU Miners
 
     //// -- Pool manager related params

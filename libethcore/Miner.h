@@ -42,43 +42,24 @@ namespace eth
 enum class DeviceTypeEnum
 {
     Unknown,
-    Cpu,
-    Gpu,
-    Accelerator
+    Cpu
 };
 
 enum class DeviceSubscriptionTypeEnum
 {
     None,
-    OpenCL,
-    Cuda,
     Cpu
-
 };
 
 enum class MinerType
 {
-    Mixed,
-    CL,
-    CUDA,
     CPU
 };
 
 enum class HwMonitorInfoType
 {
     UNKNOWN,
-    NVIDIA,
-    AMD,
     CPU
-};
-
-enum class ClPlatformTypeEnum
-{
-    Unknown,
-    Amd,
-    Clover,
-    Nvidia,
-    Intel
 };
 
 enum class SolutionAccountingEnum
@@ -92,25 +73,6 @@ enum class SolutionAccountingEnum
 struct MinerSettings
 {
     vector<unsigned> devices;
-};
-
-// Holds settings for CUDA Miner
-struct CUSettings : public MinerSettings
-{
-    unsigned streams = 2;
-    unsigned schedule = 4;
-    unsigned gridSize = 8192;
-    unsigned blockSize = 128;
-};
-
-// Holds settings for OpenCL Miner
-struct CLSettings : public MinerSettings
-{
-    bool noBinary = false;
-    bool noExit = false;
-    unsigned globalWorkSize = 0;
-    unsigned globalWorkSizeMultiplier = 65536;
-    unsigned localWorkSize = 128;
 };
 
 // Holds settings for CPU Miner
@@ -169,36 +131,6 @@ struct DeviceDescriptor
     string uniqueId;     // For GPUs this is the PCI ID
     size_t totalMemory;  // Total memory available by device
     string name;         // Device Name
-
-    bool clDetected;  // For OpenCL detected devices
-    string clName;
-    unsigned int clPlatformId;
-    string clPlatformName;
-    ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
-    string clPlatformVersion;
-    unsigned int clPlatformVersionMajor;
-    unsigned int clPlatformVersionMinor;
-    unsigned int clDeviceOrdinal;
-    unsigned int clDeviceIndex;
-    string clDeviceVersion;
-    unsigned int clDeviceVersionMajor;
-    unsigned int clDeviceVersionMinor;
-    string clBoardName;
-    size_t clMaxMemAlloc;
-    size_t clMaxWorkGroup;
-    unsigned int clMaxComputeUnits;
-    string clNvCompute;
-    unsigned int clNvComputeMajor;
-    unsigned int clNvComputeMinor;
-
-    bool cuDetected;  // For CUDA detected devices
-    string cuName;
-    unsigned int cuDeviceOrdinal;
-    unsigned int cuDeviceIndex;
-    string cuCompute;
-    unsigned int cuComputeMajor;
-    unsigned int cuComputeMinor;
-
     int cpCpuNumer;   // For CPU
 };
 
@@ -223,7 +155,6 @@ enum MinerPauseEnum
 /// Keeps track of progress for farm and miners
 struct TelemetryType
 {
-    bool hwmon = false;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     TelemetryAccountType farm;
@@ -246,7 +177,6 @@ struct TelemetryType
         - speed       Actual speed at the same level of
                       magnitude for farm speed
         - sensors     Values of sensors (temp, fan, power)
-        - solutions   Optional (LOG_PER_GPU) Solutions detail per GPU
         */
 
         /*
@@ -292,13 +222,6 @@ struct TelemetryType
             _ret << (miner.paused ? EthRed : "") << miner.prefix << i << " " << EthTeal
                  << std::fixed << std::setprecision(2) << hr << EthReset;
 
-            if (hwmon)
-                _ret << " " << EthTeal << miner.sensors.str() << EthReset;
-
-            // Eventually push also solutions per single GPU
-            if (g_logOptions & LOG_PER_GPU)
-                _ret << " " << EthTeal << miner.solutions.str() << EthReset;
-
             // Separator if not the last miner index
             if (i < m)
                 _ret << ", ";
@@ -321,8 +244,6 @@ public:
     static FarmFace& f() { return *m_this; };
 
     virtual ~FarmFace() = default;
-    virtual unsigned get_tstart() = 0;
-    virtual unsigned get_tstop() = 0;
     virtual unsigned get_ergodicity() = 0;
 
     /**
@@ -377,10 +298,6 @@ public:
     void setEpoch(EpochContext const& _ec) { m_epochContext = _ec; }
 
     unsigned Index() { return m_index; };
-
-    HwMonitorInfo hwmonInfo() { return m_hwmoninfo; }
-
-    void setHwmonDeviceIndex(int i) { m_hwmoninfo.deviceIndex = i; }
 
     /**
      * @brief Kick an asleep miner.
@@ -457,7 +374,6 @@ protected:
     std::chrono::steady_clock::time_point m_workSwitchStart;
 #endif
 
-    HwMonitorInfo m_hwmoninfo;
     mutable boost::mutex x_work;
     mutable boost::mutex x_pause;
     boost::condition_variable m_new_work_signal;

@@ -27,6 +27,7 @@
 #include <libethcore/Farm.h>
 #include <libethash-cpu/CPUMiner.h>
 #include <libpoolprotocols/PoolManager.h>
+#include "RandomY/src/randomx.h"
 
 #if API_CORE
 #include <libapicore/ApiServer.h>
@@ -173,7 +174,7 @@ public:
     {
         std::queue<string> warnings;
 
-        CLI::App app("Ethminer - GPU Ethash miner");
+        CLI::App app("Coreminer - CPU Ethash miner");
 
         bool bhelp = false;
         string shelpExt;
@@ -260,18 +261,25 @@ public:
 
         app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
 
-        bool cl_miner = false;
-        app.add_flag("-G,--opencl", cl_miner, "");
-
-        bool cuda_miner = false;
-        app.add_flag("-U,--cuda", cuda_miner, "");
-
-        bool cpu_miner = false;
+        bool cpu_miner = true;
         app.add_flag("--cpu", cpu_miner, "");
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
+        bool largePages = false;
+        app.add_flag("--large-pages", largePages, "Enable large pages RandomY mode");
+
+        bool hardAes = false;
+        app.add_flag("--hard-aes", hardAes, "Enable hard AES RandomY mode");
+
         // Exception handling is held at higher level
         app.parse(argc, argv);
+
+        if (largePages) {
+            m_CPSettings.flags |= RANDOMX_FLAG_LARGE_PAGES;
+        }
+        if (hardAes) {
+            m_CPSettings.flags |= RANDOMX_FLAG_HARD_AES;
+        }
         if (bhelp)
         {
             help();
@@ -469,7 +477,7 @@ public:
 
     void help()
     {
-        cout << "Ethminer - GPU ethash miner" << endl
+        cout << "Coreminer - CPU ethash miner" << endl
              << "minimal usage : ethminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
@@ -848,11 +856,6 @@ int main(int argc, char** argv)
 
         try
         {
-            // Set env vars controlling GPU driver behavior.
-            setenv("GPU_MAX_HEAP_SIZE", "100");
-            setenv("GPU_MAX_ALLOC_PERCENT", "100");
-            setenv("GPU_SINGLE_ALLOC_PERCENT", "100");
-
             // Argument validation either throws exception
             // or returns false which means do not continue
             if (!cli.validateArgs(argc, argv))

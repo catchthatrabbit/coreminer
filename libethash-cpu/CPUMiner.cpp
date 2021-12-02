@@ -173,10 +173,9 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::CPUMiner() begin");
     m_deviceDescriptor = _device;
 
-    auto dataset = getRandomYDataset();
+    auto dataset = getRandomYDataset(m_settings.flags);
     if (dataset) {
-        auto flags = getRandomYFlags();
-        m_vm = randomx_create_vm(flags, nullptr, dataset);
+        m_vm = randomx_create_vm(m_settings.flags, nullptr, dataset);
     }
 
     DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::CPUMiner() begin");
@@ -286,16 +285,27 @@ static bool is_less_or_equal(const hash256& a, const hash256& b) noexcept
     return true;
 }
 
-randomx_flags CPUMiner::getRandomYFlags() {
-    return RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_FULL_MEM;
+void CPUMiner::showRandomYFlags(randomx_flags flags) {
+    if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+        cpulog << "RandomY large pages mode is enabled";
+    }
+    if (flags & RANDOMX_FLAG_HARD_AES) {
+        cpulog << "RandomY hard aes mode is enabled";
+    }
+    if (flags & RANDOMX_FLAG_FULL_MEM) {
+        cpulog << "RandomY full mem mode is enabled";
+    }
+    if (flags & RANDOMX_FLAG_JIT) {
+        cpulog << "RandomY JIT mode is enabled";
+    }
 }
 
-randomx_dataset* CPUMiner::getRandomYDataset() {
+randomx_dataset* CPUMiner::getRandomYDataset(randomx_flags flags) {
     static randomx_dataset* dataset = nullptr;
     if (dataset == nullptr) {
+        showRandomYFlags(flags);
         std::vector<std::thread> threads;
         auto initThreadCount = std::thread::hardware_concurrency();
-        auto flags = getRandomYFlags();
         auto cache = randomx_alloc_cache(flags);
         if (cache == nullptr) {
           DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "CPUMiner::getDataset cache is nullptr");
@@ -333,8 +343,8 @@ randomx_dataset* CPUMiner::getRandomYDataset() {
     return dataset;
 }
 
-void CPUMiner::releaseRandomYDataset() {
-    auto dataset = getRandomYDataset();
+void CPUMiner::releaseRandomYDataset(randomx_flags flags) {
+    auto dataset = getRandomYDataset(flags);
     if (dataset != nullptr) {
         randomx_release_dataset(dataset);
     }

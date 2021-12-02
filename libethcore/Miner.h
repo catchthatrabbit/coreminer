@@ -26,6 +26,7 @@
 #include <libdevcore/Common.h>
 #include <libdevcore/Log.h>
 #include <libdevcore/Worker.h>
+#include <RandomY/src/randomx.h>
 
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
@@ -78,6 +79,7 @@ struct MinerSettings
 // Holds settings for CPU Miner
 struct CPSettings : public MinerSettings
 {
+    randomx_flags flags = RANDOMX_FLAG_JIT | RANDOMX_FLAG_FULL_MEM;
 };
 
 struct SolutionAccountType

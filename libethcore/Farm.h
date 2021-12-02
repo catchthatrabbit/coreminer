@@ -42,7 +42,7 @@ namespace eth
 struct FarmSettings
 {
     unsigned dagLoadMode = 0;  // 0 = Parallel; 1 = Serialized
-    bool noEval = false;       // Whether or not to re-evaluate solutions
+    bool noEval = true;        // Whether or not to re-evaluate solutions
     unsigned ergodicity = 0;   // 0=default, 1=per session, 2=per job
 };
 

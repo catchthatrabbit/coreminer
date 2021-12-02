@@ -35,9 +35,10 @@ public:
 
     static unsigned getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
-    static randomx_dataset* getRandomYDataset();
-    static void releaseRandomYDataset();
-    static randomx_flags getRandomYFlags();
+    static randomx_dataset* getRandomYDataset(randomx_flags flags);
+    static void releaseRandomYDataset(randomx_flags flags);
+    static void showRandomYFlags(randomx_flags flags);
+
     void search(const dev::eth::WorkPackage& w);
 
 protected:
@@ -51,7 +52,6 @@ private:
     CPSettings m_settings;
     randomx_vm *m_vm;
 };
-
 
 }  // namespace eth
 }  // namespace dev

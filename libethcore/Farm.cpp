@@ -47,7 +47,7 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
     m_collectTimer.async_wait(
         m_io_strand.wrap(boost::bind(&Farm::collectData, this, boost::asio::placeholders::error)));
 
-    CPUMiner::getRandomYDataset();
+    CPUMiner::getRandomYDataset(m_CPSettings.flags);
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::Farm() end");
 }
 
@@ -62,7 +62,7 @@ Farm::~Farm()
     if (m_isMining.load(std::memory_order_relaxed))
         stop();
 
-    CPUMiner::releaseRandomYDataset();
+    CPUMiner::releaseRandomYDataset(m_CPSettings.flags);
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::~Farm() end");
 }
 
@@ -352,7 +352,7 @@ void Farm::submitProofAsync(Solution const& _s)
         if (r.value > _s.work.boundary)
         {
             accountSolution(_s.midx, SolutionAccountingEnum::Failed);
-            cwarn << "GPU " << _s.midx
+            cwarn << "CPU " << _s.midx
                   << " gave incorrect result. Lower overclocking values if it happens frequently.";
             return;
         }

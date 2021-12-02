@@ -8,7 +8,6 @@ RUN apk add cmake make gcc g++  musl-dev perl linux-headers libexecinfo-dev libu
 RUN cd /ethminer && mkdir build && cd build && cmake .. && make -j4
 
 FROM alpine:3
-
 RUN apk add libgcc
 COPY --from=builder /ethminer/build/ethminer/* /usr/local/bin/
-CMD ["sh", "-c", "ethminer", "--noeval"]
+CMD ["sh", "-c", "ethminer_runner.sh"]

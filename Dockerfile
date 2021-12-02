@@ -10,4 +10,4 @@ RUN cd /ethminer && mkdir build && cd build && cmake .. && make -j4
 FROM alpine:3
 RUN apk add libgcc
 COPY --from=builder /ethminer/build/ethminer/* /usr/local/bin/
-CMD ["sh", "-c", "ethminer_runner.sh"]
+COPY --from=builder /ethminer/ethminer_runner.sh /usr/local/bin/

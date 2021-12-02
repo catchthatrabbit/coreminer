@@ -1,3 +1,5 @@
+#!/bin/bash
+
 LARGE_PAGES=""
 if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]
 then

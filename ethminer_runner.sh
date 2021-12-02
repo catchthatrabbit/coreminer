@@ -12,4 +12,4 @@ then
   HARD_AES="--hard-aes"
 fi
 
-./ethminer --noeval $LARGE_PAGES $HARD_AES $@
+ethminer --noeval $LARGE_PAGES $HARD_AES $@

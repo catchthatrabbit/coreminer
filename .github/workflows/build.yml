@@ -3,7 +3,6 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}
     steps:

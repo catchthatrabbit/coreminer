@@ -36,7 +36,7 @@ jobs:
         release_name: miner ${{steps.version_bump.outputs.tag}}
         draft: false
         prerelease: false
-   docker:
+  docker:
     needs: build
     if: github.ref == 'refs/heads/master'
     strategy:

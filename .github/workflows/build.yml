@@ -1,41 +1,11 @@
 name: CoreMiner pipeline
 on: push
 jobs:
-  docker:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
-    - name: Version
-      id: version_bump
-      uses: anothrNick/github-tag-action@1.13.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        DEFAULT_BUMP: "patch"
-        RELEASE_BRANCHES: "master"
-        WITH_V: true
-    - name: Docker
-      run: |
-        docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.SECRET_TOKEN }}
-        docker build . -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{steps.version_bump.outputs.tag}} -t ghcr.io/catchthatrabbit/ethminer/coreminer:latest
-        docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer
-    - name: Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.version_bump.outputs.tag }}
-        release_name: miner ${{ steps.version_bump.outputs.tag }}
-        draft: false
-        prerelease: false
   build:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'
+    outputs:
+        tag: ${{steps.version_bump.outputs.tag}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -47,3 +17,43 @@ jobs:
         mkdir build && cd build
         cmake ..
         make all
+    - name: Version
+      if: github.ref == 'refs/heads/master'
+      id: version_bump
+      uses: anothrNick/github-tag-action@1.13.0
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        DEFAULT_BUMP: "patch"
+        RELEASE_BRANCHES: "master"
+        WITH_V: true
+    - name: Release
+      if: github.ref == 'refs/heads/master'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        tag_name: ${{steps.version_bump.outputs.tag}}
+        release_name: miner ${{steps.version_bump.outputs.tag}}
+        draft: false
+        prerelease: false
+   docker:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, raspbian-private]
+    runs-on: ${{matrix.platform}}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
+    - name: Docker
+      run: |
+        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
+        docker build .
+        docker tag -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{needs.build.outputs.tag}}-${GITHUB_SHA}-${{matrix.platform}}
+        docker tag -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{matrix.platform}}
+        docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer

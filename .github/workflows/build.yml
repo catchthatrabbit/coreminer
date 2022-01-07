@@ -52,5 +52,7 @@ jobs:
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
-        docker build . -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{needs.build.outputs.tag}}-${GITHUB_SHA}-${{matrix.platform}} -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{matrix.platform}}
+        docker build .
+        docker tag ghcr.io/catchthatrabbit/ethminer/coreminer:${{needs.build.outputs.tag}}-${{matrix.platform}}
+        docker tag ghcr.io/catchthatrabbit/ethminer/coreminer:${{matrix.platform}}
         docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer

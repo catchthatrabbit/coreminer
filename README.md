@@ -1,19 +1,8 @@
 # ethminer
 
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
-[![Releases](https://img.shields.io/github/downloads/ethereum-mining/ethminer/total.svg)][Releases]
+> Corecoin CPU miner with stratum support
 
-> Ethereum miner with stratum support
-
-**Ethminer** is an Ethash GPU mining worker: with ethminer you can mine every coin which relies on an Ethash Proof of Work thus including Ethereum, Ethereum Classic, Metaverse, Musicoin, Ellaism, Pirl, Expanse and others. This is the actively maintained version of ethminer. It originates from [cpp-ethereum] project (where GPU mining has been discontinued) and builds on the improvements made in [Genoil's fork]. See [FAQ](#faq) for more details.
-
-## Features
-
-* realistic benchmarking against arbitrary epoch/DAG/blocknumber
-* stratum mining without proxy
-* farm failover (getwork + stratum)
-
+**Corecoin** is an RandomY CPU mining worker: with coreminer you can mine every coin which relies on an RandomY Proof of Work.
 
 ## Table of Contents
 
@@ -30,7 +19,7 @@
 
 ## Install
 
-[![Releases](https://img.shields.io/github/downloads/ethereum-mining/ethminer/total.svg)][Releases]
+[![Releases](https://img.shields.io/github/downloads/catchthatrabbit/coreminer/releases/total.svg)][Releases]
 
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
 the [Releases] section.

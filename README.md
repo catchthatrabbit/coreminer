@@ -12,13 +12,10 @@
 * [Build](#build)
     * [Continuous Integration and development builds](#continuous-integration-and-development-builds)
     * [Building from source](#building-from-source)
-* [Contribute](#contribute)
-* [F.A.Q.](#faq)
-
 
 ## Install
 
-[![Releases](https://img.shields.io/github/downloads/catchthatrabbit/coreminer/releases/total.svg)][Releases]
+[Releases](https://github.com/catchthatrabbit/coreminer/releases)
 
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
 the [Releases] section.
@@ -53,8 +50,3 @@ See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
-
-
-## F.A.Q
-
-![Releases]: https://github.com/catchthatrabbit/coreminer/releases

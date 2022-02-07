@@ -15,10 +15,9 @@
 
 ## Install
 
-[Releases](https://github.com/catchthatrabbit/coreminer/releases)
 
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
-the [Releases] section.
+the [Releases](https://github.com/catchthatrabbit/coreminer/releases) section.
 Download an archive for your operating system and unpack the content to a place
 accessible from command line. The ethminer is ready to go.
 

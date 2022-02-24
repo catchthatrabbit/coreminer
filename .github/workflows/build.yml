@@ -28,6 +28,7 @@ jobs:
           mingw-w64-x86_64-make
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gcc-g++
     - name: Build Windows
       if: ${{ matrix.platform == 'windows-latest' }}
       shell: msys2 {0}

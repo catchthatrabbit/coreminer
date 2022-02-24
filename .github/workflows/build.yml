@@ -5,7 +5,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest, raspbian-private, macos-latest]
-    runs-on: [ubuntu-latest, macos-private, raspbian-private, windows-latest]
+    runs-on: ${{matrix.platform}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2

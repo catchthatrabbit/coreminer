@@ -4,7 +4,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, windows-latest, raspbian-private, macos-latest]
+        platform: [ubuntu-latest, windows-latest, raspbian-private]
     runs-on: ${{matrix.platform}}
     steps:
     - name: Checkout repository and submodules

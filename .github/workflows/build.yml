@@ -2,9 +2,10 @@ name: CoreMiner pipeline
 on: push
 jobs:
   build:
-    runs-on: ubuntu-latest
-    outputs:
-        tag: ${{steps.version_bump.outputs.tag}}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest, raspbian-private, macos-latest]
+    runs-on: [ubuntu-latest, macos-private, raspbian-private, windows-latest]
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -12,12 +13,45 @@ jobs:
         submodules: recursive
         token: ${{secrets.SECRET_TOKEN}}
     - name: Build
+      if: ${{ matrix.platform != 'windows-latest' }}
       run: |
         mkdir build && cd build
         cmake ..
-        make all
+        make -j4
+    - name: Setup Win
+      if: ${{ matrix.platform == 'windows-latest' }}
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        install: >
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-gcc
+    - name: Build Windows
+      if: ${{ matrix.platform == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        mkdir build && cd build && cmake .. -G "MinGW Makefiles" && mingw32-make
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: coreminer-${{matrix.platform}}
+        path: build/ethminer/ethminer
+  release:
+    #if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+        tag: ${{steps.version_bump.outputs.tag}}
+        url: ${{steps.create_release.outputs.url}}
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
     - name: Version
-      if: github.ref == 'refs/heads/master'
       id: version_bump
       uses: anothrNick/github-tag-action@1.13.0
       env:
@@ -27,7 +61,7 @@ jobs:
         WITH_V: true
     - name: Release
       if: github.ref == 'refs/heads/master'
-      id: create_release
+      id: release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -36,9 +70,34 @@ jobs:
         release_name: coreminer ${{steps.version_bump.outputs.tag}}
         draft: false
         prerelease: false
+  artifacts:
+    needs: release
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest, raspbian-private, macos-latest]
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{matrix.platform.platform}}
+    - name: Zip
+      run: zip ${{ matrix.platform }}.zip ${{ matrix.platform }}/* -j
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./${{ matrix.platform }}.zip
+        asset_name: ${{ matrix.platform }}.zip
+        asset_content_type: application/zip
   docker:
-    needs: build
-    if: github.ref == 'refs/heads/master'
+    needs: release
     strategy:
       matrix:
         platform: [ubuntu-latest, raspbian-private]

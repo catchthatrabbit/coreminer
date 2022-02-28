@@ -28,7 +28,6 @@ jobs:
     - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
       run: |
-        mkdir build
         cmake .. -G "Visual Studio 15 2017 Win64" -T v140 -Bbuild -DAPICORE=ON
         cmake --build . --config Release --target package
     - name: Upload

@@ -18,22 +18,20 @@ jobs:
         mkdir build && cd build
         cmake ..
         make -j4
-    - name: Setup Win
+    - name: Win MSBuild
       if: ${{ matrix.platform == 'windows-latest' }}
-      uses: msys2/setup-msys2@v2
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Win Perl
+      uses: shogo82148/actions-setup-perl@v1
       with:
-        msystem: mingw64
-        update: true
-        install: >
-          mingw-w64-x86_64-make
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-libc++
-    - name: Build Windows
+        perl-version: latest
+    - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
-      shell: msys2 {0}
       run: |
-        mkdir build && cd build && cmake .. -G "MinGW Makefiles" && mingw32-make
+        if not exist "build\" mkdir "build\"
+        cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DAPICORE=ON ..
+        cmake --build . --config Release --target package
+        ls -al
     - name: Upload
       uses: actions/upload-artifact@v2
       with:

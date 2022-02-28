@@ -28,7 +28,7 @@ jobs:
     - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
       run: |
-        if not exist "build\" mkdir "build\"
+        mkdir build
         cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DAPICORE=ON ..
         cmake --build . --config Release --target package
         ls -al

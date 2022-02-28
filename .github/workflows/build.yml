@@ -31,7 +31,6 @@ jobs:
         mkdir build
         cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DAPICORE=ON ..
         cmake --build . --config Release --target package
-        ls -al
     - name: Upload
       uses: actions/upload-artifact@v2
       with:

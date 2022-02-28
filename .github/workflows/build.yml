@@ -28,7 +28,7 @@ jobs:
     - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
       run: |
-        cmake .. -G "Visual Studio 15 2017 Win64" -T v140 -Bbuild -DAPICORE=ON
+        cmake .. -G "Visual Studio 15 2017 Win64" -T v140 -DAPICORE=ON
         cmake --build . --config Release --target package
     - name: Upload
       uses: actions/upload-artifact@v2

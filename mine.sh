@@ -21,7 +21,7 @@ add_pool()
 				echo "│ 🐰 pool $opt"
 				echo "╘══════════════════════════════"
 				printf -v "server_$1" '%s' 'eu.catchthatrabbit.com'
-				printf -v "port_$1" '%i' 4444
+				printf -v "port_$1" '%i' 8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
@@ -34,7 +34,7 @@ add_pool()
 				echo "│ 🐰 pool $opt"
 				echo "╘══════════════════════════════"
 				printf -v "server_$1" '%s' 'as.catchthatrabbit.com'
-				printf -v "port_$1" '%i' 4444
+				printf -v "port_$1" '%i' 8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
@@ -98,7 +98,7 @@ validate_wallet()
 				echo $((`ord $UPPER` - 55))
 			fi
 		}
-		ICAN=${1//[[:blank:]]/}
+		ICAN=$1
 		COUNTRY=${ICAN:0:2}
 		CHECKSUM=${ICAN:2:2}
 		BCAN=${ICAN:4}
@@ -119,7 +119,7 @@ validate_wallet()
 compose_stratum()
 {
 	# scheme://wallet[.workername][:password]@hostname:port[/...]
-	STRATUM="stratum://$1.$2@$3:$4"
+	echo "stratum://$1.$2@$3:$4"
 }
 
 export_config()
@@ -156,18 +156,15 @@ if [ -f "$CONFIG" ]; then
 	echo "〉Wallet validated."
 	if [[ -z "$server_2" ]]; then
 		echo "〉Configuring primary stratum server."
-		compose_stratum $ICANWALLET $worker $server_1 $port_1
-		STRATUM1=$STRATUM
+		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
 		echo "〉Starting mining command."
-		start_mining $STRATUM1
+		start_mining $STRATUM
 	else
 		echo "〉Configuring primary and backup stratum server."
-		compose_stratum $ICANWALLET $worker $server_1 $port_1
-		STRATUM1=$STRATUM
-		compose_stratum $ICANWALLET $worker $server_2 $port_2
-		STRATUM2=$STRATUM
+		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
+		STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
 		echo "〉Starting mining command."
-		start_mining $STRATUM1 $STRATUM2
+		start_mining $STRATUM $STRATUM1
 	fi
 else
     echo "〉Mine settings file '$CONFIG' doesn't exist."
@@ -214,15 +211,12 @@ else
 		case $mine in
 			[yY][eE][sS]|[yY])
 				if [[ "$backpool" -gt "0" ]]; then
-					compose_stratum $ICANWALLET $worker $server_1 $port_1
-					STRATUM1=$STRATUM
-					compose_stratum $ICANWALLET $worker $server_2 $port_2
-					STRATUM2=$STRATUM
-					start_mining $STRATUM1 $STRATUM2
+					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
+					STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
+					start_mining $STRATUM $STRATUM1
 				else
-					compose_stratum $ICANWALLET $worker $server_1 $port_1
-					STRATUM1=$STRATUM
-					start_mining $STRATUM1
+					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
+					start_mining $STRATUM
 				fi
 				break
 	            ;;

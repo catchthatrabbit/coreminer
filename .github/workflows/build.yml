@@ -27,6 +27,7 @@ jobs:
         perl-version: latest
     - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
+      shell: cmd
       run: |
         cmake . -G "Visual Studio 17 2022" -A "Win64" -T v170 -DAPICORE=ON
         dir

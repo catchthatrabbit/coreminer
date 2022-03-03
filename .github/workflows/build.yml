@@ -21,10 +21,6 @@ jobs:
     - name: Win MSBuild
       if: ${{ matrix.platform == 'windows-latest' }}
       uses: microsoft/setup-msbuild@v1.1
-    - name: Win Perl
-      uses: shogo82148/actions-setup-perl@v1
-      with:
-        perl-version: latest
     - name: Build win
       if: ${{ matrix.platform == 'windows-latest' }}
       shell: cmd

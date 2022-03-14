@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}
-        url: ${{steps.create_release.outputs.url}}
+        url: ${{steps.create_release.outputs.upload_url}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2

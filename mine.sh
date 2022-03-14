@@ -25,6 +25,7 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
+					read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -38,6 +39,7 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
+					read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -51,6 +53,7 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
+					read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -75,12 +78,17 @@ start_mining()
 	fi
 
 	POOLS=""
-	for pool in "$@"
+	for pool in "${@:2}"
 	do
 	    POOLS+="-P $pool "
 	done
 
-	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS
+	THREAD=""
+	if [[ "$threads" -gt "0" ]]; then
+		THREAD="-t $threads "
+	fi
+
+	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 }
 
 validate_wallet()
@@ -199,9 +207,17 @@ else
 	echo "➤ Saving the settings."
 
 	if [[ "$backpool" -gt "0" ]]; then
-		export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker"
+		if [[ "$threads" -gt "0" ]]; then
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker"
+		else
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
+		fi
 	else
-		export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker"
+		if [[ "$threads" -gt "0" ]]; then
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker"
+		else
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
+		fi
 	fi
 
 	echo
@@ -213,10 +229,10 @@ else
 				if [[ "$backpool" -gt "0" ]]; then
 					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
 					STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
-					start_mining $STRATUM $STRATUM1
+					start_mining $threads $STRATUM $STRATUM1
 				else
 					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
-					start_mining $STRATUM
+					start_mining $threads $STRATUM
 				fi
 				break
 	            ;;

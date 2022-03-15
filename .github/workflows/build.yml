@@ -18,23 +18,14 @@ jobs:
         mkdir build && cd build
         cmake ..
         make -j4
-    - name: Win MSBuild
-      if: ${{ matrix.platform == 'windows-latest' }}
-      uses: microsoft/setup-msbuild@v1.1
-    - name: Build win
-      if: ${{ matrix.platform == 'windows-latest' }}
-      shell: cmd
-      run: |
-        cmake . -G "Visual Studio 17 2022" -A "Win64" -T v170 -DAPICORE=ON
-        dir
-        cmake --build . --config Release --target package
     - name: Upload
+      if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.platform}}
         path: build/ethminer/ethminer
   release:
-    #if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     outputs:

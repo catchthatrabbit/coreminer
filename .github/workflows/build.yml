@@ -28,7 +28,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.platform}}
-        path: build/ethminer/ethminer
+        path: build/artifacts/*
   release:
     #if: github.ref == 'refs/heads/master'
     needs: build

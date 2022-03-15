@@ -15,4 +15,4 @@ then
   HARD_AES="--hard-aes"
 fi
 
-coreminer --noeval $LARGE_PAGES $HARD_AES $@
+./coreminer --noeval $LARGE_PAGES $HARD_AES $@

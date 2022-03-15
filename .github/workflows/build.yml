@@ -18,6 +18,11 @@ jobs:
         mkdir build && cd build
         cmake ..
         make -j4
+    - name: Prepare
+      run: |
+        mkdir build/artifacts
+        cp build/coreminer/coreminer build/artifacts
+        cp coreminer_runner.sh build/artifacts
     - name: Upload
       if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v2
@@ -80,7 +85,7 @@ jobs:
       with:
         upload_url: ${{ needs.release.outputs.url }}
         asset_path: ./${{ matrix.platform }}.zip
-        asset_name: ${{ matrix.platform }}.zip
+        asset_name: coreminer-${{ matrix.platform }}.zip
         asset_content_type: application/zip
   docker:
     needs: release

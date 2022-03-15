@@ -2,9 +2,10 @@ name: CoreMiner pipeline
 on: push
 jobs:
   build:
-    runs-on: ubuntu-latest
-    outputs:
-        tag: ${{steps.version_bump.outputs.tag}}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, raspbian-private]
+    runs-on: ${{matrix.platform}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -12,12 +13,31 @@ jobs:
         submodules: recursive
         token: ${{secrets.SECRET_TOKEN}}
     - name: Build
+      if: ${{ matrix.platform != 'windows-latest' }}
       run: |
         mkdir build && cd build
         cmake ..
-        make all
-    - name: Version
+        make -j4
+    - name: Upload
       if: github.ref == 'refs/heads/master'
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.platform}}
+        path: build/ethminer/ethminer
+  release:
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+        tag: ${{steps.version_bump.outputs.tag}}
+        url: ${{steps.create_release.outputs.upload_url}}
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
+    - name: Version
       id: version_bump
       uses: anothrNick/github-tag-action@1.13.0
       env:
@@ -26,7 +46,6 @@ jobs:
         RELEASE_BRANCHES: "master"
         WITH_V: true
     - name: Release
-      if: github.ref == 'refs/heads/master'
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -36,9 +55,35 @@ jobs:
         release_name: coreminer ${{steps.version_bump.outputs.tag}}
         draft: false
         prerelease: false
+  artifacts:
+    needs: release
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, raspbian-private]
+    runs-on: ${{matrix.platform}}
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{matrix.platform.platform}}
+    - name: Zip
+      run: zip ${{ matrix.platform }}.zip ${{ matrix.platform }}/* -j
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.url }}
+        asset_path: ./${{ matrix.platform }}.zip
+        asset_name: ${{ matrix.platform }}.zip
+        asset_content_type: application/zip
   docker:
-    needs: build
-    if: github.ref == 'refs/heads/master'
+    needs: release
     strategy:
       matrix:
         platform: [ubuntu-latest, raspbian-private]
@@ -52,5 +97,5 @@ jobs:
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
-        docker build --network=host . -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{needs.build.outputs.tag}}-${{matrix.platform}} -t ghcr.io/catchthatrabbit/ethminer/coreminer:${{matrix.platform}}
-        docker push --all-tags ghcr.io/catchthatrabbit/ethminer/coreminer
+        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform}}
+        docker push --all-tags ghcr.io/catchthatrabbit/coreminer

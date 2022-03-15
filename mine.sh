@@ -78,14 +78,14 @@ start_mining()
 	fi
 
 	POOLS=""
-	for pool in "${@:2}"
+	for pool in "${@:1}"
 	do
-	    POOLS+="-P $pool "
+		POOLS+="-P ${pool} "
 	done
 
 	THREAD=""
 	if [[ "$threads" -gt "0" ]]; then
-		THREAD="-t $threads "
+		THREAD="-t ${threads} "
 	fi
 
 	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
@@ -132,6 +132,7 @@ compose_stratum()
 
 export_config()
 {
+	echo "${@:2}"
 	echo "\c" > $1
 	for setting in "${@:2}"
 	do
@@ -166,13 +167,13 @@ if [ -f "$CONFIG" ]; then
 		echo "〉Configuring primary stratum server."
 		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
 		echo "〉Starting mining command."
-		start_mining $STRATUM
+		start_mining $threads $STRATUM
 	else
 		echo "〉Configuring primary and backup stratum server."
 		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
 		STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
 		echo "〉Starting mining command."
-		start_mining $STRATUM $STRATUM1
+		start_mining $threads $STRATUM $STRATUM1
 	fi
 else
     echo "〉Mine settings file '$CONFIG' doesn't exist."
@@ -208,15 +209,15 @@ else
 
 	if [[ "$backpool" -gt "0" ]]; then
 		if [[ "$threads" -gt "0" ]]; then
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker"
-		else
 			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
+		else
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker"
 		fi
 	else
 		if [[ "$threads" -gt "0" ]]; then
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker"
-		else
 			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
+		else
+			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker"
 		fi
 	fi
 
@@ -237,7 +238,7 @@ else
 				break
 	            ;;
 			[nN][oO]|[nN])
-	            break
+	            exit 0
 	            ;;
 			*)
 	            echo "Invalid input. [yes,no]"

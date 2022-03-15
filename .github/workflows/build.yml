@@ -24,13 +24,13 @@ jobs:
         cp build/coreminer/coreminer build/artifacts
         cp coreminer_runner.sh build/artifacts
     - name: Upload
-      if: github.ref == 'refs/heads/master'
+      #if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.platform}}
         path: build/ethminer/ethminer
   release:
-    if: github.ref == 'refs/heads/master'
+    #if: github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     outputs:

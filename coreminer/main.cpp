@@ -1,23 +1,23 @@
 /*
-    This file is part of ethminer.
+    This file is part of coreminer.
 
-    ethminer is free software: you can redistribute it and/or modify
+    coreminer is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    ethminer is distributed in the hope that it will be useful,
+    coreminer is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
+    along with coreminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <CLI/CLI.hpp>
 
-#include <ethminer/buildinfo.h>
+#include <coreminer/buildinfo.h>
 #include <condition_variable>
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
@@ -47,7 +47,7 @@ using namespace dev::eth;
 
 // Global vars
 bool g_running = false;
-bool g_exitOnError = false;  // Whether or not ethminer should exit on mining threads errors
+bool g_exitOnError = false;  // Whether or not coreminer should exit on mining threads errors
 
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service;  // The IO service itself
@@ -61,7 +61,7 @@ struct MiningChannel : public LogChannel
 #define minelog clog(MiningChannel)
 
 #if ETH_DBUS
-#include <ethminer/DBusInt.h>
+#include <coreminer/DBusInt.h>
 #endif
 
 class MinerCLI
@@ -478,11 +478,11 @@ public:
     void help()
     {
         cout << "Coreminer - CPU ethash miner" << endl
-             << "minimal usage : ethminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
+             << "minimal usage : coreminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
              << endl
-             << "    By default ethminer will try to use all devices types" << endl
+             << "    By default coreminer will try to use all devices types" << endl
              << "    it can detect. Optionally you can limit this behavior" << endl
              << "    setting either of the following options" << endl
              << "    --cpu               Development ONLY ! (NO MINING)" << endl
@@ -495,7 +495,7 @@ public:
              << endl
              << "                        For an explication and some samples about" << endl
              << "                        how to fill in this value please use" << endl
-             << "                        ethminer --help-ext con" << endl
+             << "                        coreminer --help-ext con" << endl
              << endl
 
              << "Common Options :" << endl
@@ -695,16 +695,16 @@ public:
                  << "    You can add as many -P arguments as you want. Every -P specification"
                  << endl
                  << "    after the first one behaves as fail-over connection. When also the" << endl
-                 << "    the fail-over disconnects ethminer passes to the next connection" << endl
+                 << "    the fail-over disconnects coreminer passes to the next connection" << endl
                  << "    available and so on till the list is exhausted. At that moment" << endl
-                 << "    ethminer restarts the connection cycle from the first one." << endl
+                 << "    coreminer restarts the connection cycle from the first one." << endl
                  << "    An exception to this behavior is ruled by the --failover-timeout" << endl
-                 << "    command line argument. See 'ethminer -H misc' for details." << endl
+                 << "    command line argument. See 'coreminer -H misc' for details." << endl
                  << endl
                  << "    The special notation '-P exit' stops the failover loop." << endl
-                 << "    When ethminer reaches this kind of connection it simply quits." << endl
+                 << "    When coreminer reaches this kind of connection it simply quits." << endl
                  << endl
-                 << "    When using stratum mode ethminer tries to auto-detect the correct" << endl
+                 << "    When using stratum mode coreminer tries to auto-detect the correct" << endl
                  << "    flavour provided by the pool. Should be fine in 99% of the cases." << endl
                  << "    Nevertheless you might want to fine tune the stratum flavour by" << endl
                  << "    any of of the following valid schemes :" << endl
@@ -835,17 +835,17 @@ int main(int argc, char** argv)
 #endif
 
     // Always out release version
-    auto* bi = ethminer_get_buildinfo();
+    auto* bi = coreminer_get_buildinfo();
     cout << endl
          << endl
-         << "ethminer " << bi->project_version << endl
+         << "coreminer " << bi->project_version << endl
          << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
          << endl;
 
     if (argc < 2)
     {
         cerr << "No arguments specified. " << endl
-             << "Try 'ethminer --help' to get a list of arguments." << endl
+             << "Try 'coreminer --help' to get a list of arguments." << endl
              << endl;
         return 1;
     }
@@ -893,7 +893,7 @@ int main(int argc, char** argv)
         catch (std::invalid_argument& ex1)
         {
             cerr << "Error: " << ex1.what() << endl
-                 << "Try ethminer --help to get an explained list of arguments." << endl
+                 << "Try coreminer --help to get an explained list of arguments." << endl
                  << endl;
             return 1;
         }

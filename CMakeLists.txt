@@ -18,7 +18,7 @@ HunterGate(
     LOCAL
 )
 
-project(ethminer)
+project(coreminer)
 set(PROJECT_VERSION 0.19.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -80,7 +80,7 @@ if (APICORE)
     add_subdirectory(libapicore)
 endif()
 
-add_subdirectory(ethminer)
+add_subdirectory(coreminer)
 
 
 if(WIN32)

@@ -1,8 +1,8 @@
-# ethminer
+# coreminer
 
 > Corecoin CPU miner with stratum support
 
-**Corecoin** is an RandomY CPU mining worker: with coreminer you can mine every coin which relies on an RandomY Proof of Work.
+**Coreminer** is an RandomY CPU mining worker: with coreminer you can mine every coin which relies on an RandomY Proof of Work.
 
 ## Table of Contents
 
@@ -19,22 +19,22 @@
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
 the [Releases](https://github.com/catchthatrabbit/coreminer/releases) section.
 Download an archive for your operating system and unpack the content to a place
-accessible from command line. The ethminer is ready to go.
+accessible from command line. The coreminer is ready to go.
 
 ## Usage
 
-The **ethminer** is a command line program. This means you launch it either
+The **coreminer** is a command line program. This means you launch it either
 from a Windows command prompt or Linux console, or create shortcuts to
 predefined command lines using a Linux Bash script or Windows batch/cmd file.
 For a full list of available command, please run:
 
 ```sh
-ethminer --help
+coreminer --help
 ```
 
 ### Examples connecting to pools
 
-Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to different pools.
+Check our [samples](docs/POOL_EXAMPLES_XCB.md) to see how to connect to different pools.
 
 ## Build
 

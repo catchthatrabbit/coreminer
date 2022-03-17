@@ -4,8 +4,8 @@ add_pool()
 {
 	if [[ "$1" -gt "1" ]]; then
 		echo
-		echo "〉Please, select the backup mining pool."
-		PS3="➤ Backup Pool: "
+		echo "〉Please, select the additional mining pool."
+		PS3="➤ Additional Pool: "
 	else
 		echo "〉Please, select the mining pool."
 		PS3="➤ Pool: "
@@ -20,12 +20,12 @@ add_pool()
 				echo "╒══════════════════════════════"
 				echo "│ 🐰 pool $opt"
 				echo "╘══════════════════════════════"
-				printf -v "server_$1" '%s' 'eu.catchthatrabbit.com'
-				printf -v "port_$1" '%i' 8008
+				server[$1]="eu.catchthatrabbit.com"
+				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
-					read -p "➤ How many threads to use? [Enter for all] " threads
+					#read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -34,12 +34,12 @@ add_pool()
 				echo "╒══════════════════════════════"
 				echo "│ 🐰 pool $opt"
 				echo "╘══════════════════════════════"
-				printf -v "server_$1" '%s' 'as.catchthatrabbit.com'
-				printf -v "port_$1" '%i' 8008
+				server[$1]="as.catchthatrabbit.com"
+				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
-					read -p "➤ How many threads to use? [Enter for all] " threads
+					#read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -48,12 +48,12 @@ add_pool()
 				echo "╒══════════════════════════════"
 				echo "│ Custom pool"
 				echo "╘══════════════════════════════"
-				read -p "➤ Enter server address: " "server_$1"
-				read -p "➤ Enter server port: " "port_$1"
+				read -p "➤ Enter server address: " server[$1]
+				read -p "➤ Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
 					read -p "➤ Enter wallet address: " wallet
 					read -p "➤ Enter workder name: " worker
-					read -p "➤ How many threads to use? [Enter for all] " threads
+					#read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -78,13 +78,13 @@ start_mining()
 	fi
 
 	POOLS=""
-	for pool in "${@:1}"
+	for pool in "${@:2}"
 	do
 		POOLS+="-P ${pool} "
 	done
 
 	THREAD=""
-	if [[ "$threads" -gt "0" ]]; then
+	if [[ "$1" -gt "0" ]]; then
 		THREAD="-t ${threads} "
 	fi
 
@@ -111,6 +111,7 @@ validate_wallet()
 		CHECKSUM=${ICAN:2:2}
 		BCAN=${ICAN:4}
 		BCCO=`echo $BCAN``echo $COUNTRY`
+		SUM=""
 		for ((i=0; i<${#BCCO}; i++)); do
 			SUM+=`alphabet_pos ${BCCO:$i:1}`
 		done
@@ -127,7 +128,11 @@ validate_wallet()
 compose_stratum()
 {
 	# scheme://wallet[.workername][:password]@hostname:port[/...]
-	echo "stratum://$1.$2@$3:$4"
+	if [[ -z "$4" ]]; then
+		echo "stratum://$1@$2:$3"
+	else
+		echo "stratum://$1.$4@$2:$3"
+	fi
 }
 
 export_config()
@@ -163,39 +168,36 @@ if [ -f "$CONFIG" ]; then
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
 	echo "〉Wallet validated."
-	if [[ -z "$server_2" ]]; then
-		echo "〉Configuring primary stratum server."
-		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
-		echo "〉Starting mining command."
-		start_mining $threads $STRATUM
-	else
-		echo "〉Configuring primary and backup stratum server."
-		STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
-		STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
-		echo "〉Starting mining command."
-		start_mining $threads $STRATUM $STRATUM1
-	fi
+	STRATUM=""
+	echo "〉Configuring stratum server."
+	for i in "${!server[@]}"
+	do
+		STRATUM+=`compose_stratum "$ICANWALLET" "${server[$i]}" "${port[$i]}" "$worker"`
+		STRATUM+=" "
+	done
+	echo "〉Starting mining command."
+	start_mining "$threads" $STRATUM
 else
     echo "〉Mine settings file '$CONFIG' doesn't exist."
 	echo "〉Proceeding with setup."
 	echo
-	add_pool 1
+	LOOP=1
+	add_pool $LOOP
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
 	echo "〉Wallet validated."
 
 	echo
+	(( LOOP++ ))
 	while true
 	do
-		read -r -p "➤ Do you wish to add backup pool? [yes/no] " back
+		read -r -p "➤ Do you wish to add additional pool? [yes/no] " back
 		case $back in
 			[yY][eE][sS]|[yY])
-				add_pool 2
-				backpool=1
-				break
+				add_pool $LOOP
+				(( LOOP++ ))
 	            ;;
 			[nN][oO]|[nN])
-	            backpool=0
 				break
 	            ;;
 			*)
@@ -207,19 +209,16 @@ else
 	echo
 	echo "➤ Saving the settings."
 
-	if [[ "$backpool" -gt "0" ]]; then
-		if [[ "$threads" -gt "0" ]]; then
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
-		else
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "server_2=$server_2" "port_2=$port_2" "wallet=$ICANWALLET" "worker=$worker"
-		fi
+	EXPORTDATA=""
+	if [[ "$threads" -gt "0" ]]; then
+		EXPORTDATA+="$CONFIG wallet=${ICANWALLET} worker=${worker} threads=${threads}"
 	else
-		if [[ "$threads" -gt "0" ]]; then
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker" "threads=$threads"
-		else
-			export_config $CONFIG "server_1=$server_1" "port_1=$port_1" "wallet=$ICANWALLET" "worker=$worker"
-		fi
+		EXPORTDATA+="$CONFIG wallet=${ICANWALLET} worker=${worker}"
 	fi
+	for ((i = 1; i < $LOOP; i++)); do
+		EXPORTDATA+=" server[$i]=${server[$i]} port[$i]=${port[$i]}"
+	done
+	export_config $EXPORTDATA
 
 	echo
 	while true
@@ -227,14 +226,12 @@ else
 		read -r -p "➤ Start mining now? [yes/no] " mine
 		case $mine in
 			[yY][eE][sS]|[yY])
-				if [[ "$backpool" -gt "0" ]]; then
-					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
-					STRATUM1=`compose_stratum $ICANWALLET $worker $server_2 $port_2`
-					start_mining $threads $STRATUM $STRATUM1
-				else
-					STRATUM=`compose_stratum $ICANWALLET $worker $server_1 $port_1`
-					start_mining $threads $STRATUM
-				fi
+				STRATUM=""
+				for ((i = 1; i < $LOOP; i++)); do
+					STRATUM+=`compose_stratum "$ICANWALLET" "${server[$i]}" "${port[$i]}" "$worker"`
+					STRATUM+=" "
+				done
+				start_mining "$threads" $STRATUM
 				break
 	            ;;
 			[nN][oO]|[nN])

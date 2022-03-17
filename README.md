@@ -32,9 +32,9 @@ For a full list of available command, please run:
 coreminer --help
 ```
 
-### Examples connecting to pools
+### How to start mining
 
-Check our [samples](docs/POOL_EXAMPLES_XCB.md) to see how to connect to different pools.
+Check our [instruction](https://web-poolfront.netlify.app/start-mining) to see how to start mining.
 
 ## Build
 

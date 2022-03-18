@@ -11,7 +11,7 @@ add_pool()
 		PS3="$(tput setaf 3)➤$(tput sgr 0) Pool: "
 	fi
 
-	options=("CTR - Europe" "CTR - Asia" "Other" "Exit")
+	options=("CTR - Europe" "CTR - Europe (Backup)" "CTR - Asia" "CTR - Asia (Backup)" "Other" "Exit")
 	select opt in "${options[@]}"
 	do
 		case "$REPLY" in
@@ -34,6 +34,20 @@ add_pool()
 				echo "╒══════════════════════════════"
 				echo "│ 🐰 pool $opt"
 				echo "╘══════════════════════════════"
+				server[$1]="eu1.catchthatrabbit.com"
+				port[$1]=8008
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					#read -p "➤ How many threads to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			3)
+				echo
+				echo "╒══════════════════════════════"
+				echo "│ 🐰 pool $opt"
+				echo "╘══════════════════════════════"
 				server[$1]="as.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
@@ -43,7 +57,21 @@ add_pool()
 				fi
 				break
 				;;
-			3)
+			4)
+				echo
+				echo "╒══════════════════════════════"
+				echo "│ 🐰 pool $opt"
+				echo "╘══════════════════════════════"
+				server[$1]="as1.catchthatrabbit.com"
+				port[$1]=8008
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			5)
 				echo
 				echo "╒══════════════════════════════"
 				echo "│ Custom pool"
@@ -57,7 +85,7 @@ add_pool()
 				fi
 				break
 				;;
-			4) clear; exit 0;;
+			6) clear; exit 0;;
 			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done

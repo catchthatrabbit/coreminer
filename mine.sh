@@ -104,10 +104,10 @@ start_mining()
 run()
 {
 	case $(./coreminer --noeval $1 $2 $3 $4 2>&1) in
-	    *"cannot execute binary file"*)
-	        echo >&2 "$(tput setaf 1)●$(tput sgr 0) The miner is not compatible with your CPU architecture!"
+		*"cannot execute binary file"*)
+			echo >&2 "$(tput setaf 1)●$(tput sgr 0) The miner is not compatible with your CPU architecture!"
 			exit 3
-	        ;;
+			;;
 	esac
 }
 

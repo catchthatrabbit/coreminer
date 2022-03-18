@@ -88,7 +88,7 @@ start_mining()
 		THREAD="-t ${threads} "
 	fi
 
-	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+	./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 }
 
 validate_wallet()

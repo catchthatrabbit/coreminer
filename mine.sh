@@ -122,21 +122,11 @@ start_mining()
 	fi
 
 	if [[ -x "coreminer" ]]; then
-		run $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 	else
 		chmod +x coreminer
-		run $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 	fi
-}
-
-run()
-{
-	case $(./coreminer --noeval $1 $2 $3 $4 2>&1) in
-		*"cannot execute binary file"*)
-			echo >&2 "$(tput setaf 1)●$(tput sgr 0) The miner is not compatible with your CPU architecture!"
-			exit 3
-			;;
-	esac
 }
 
 validate_wallet()

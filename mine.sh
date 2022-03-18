@@ -4,11 +4,11 @@ add_pool()
 {
 	if [[ "$1" -gt "1" ]]; then
 		echo
-		echo "〉Please, select the additional mining pool."
+		echo "$(tput setaf 3)●$(tput sgr 0) Please, select the additional mining pool."
 		PS3="➤ Additional Pool: "
 	else
-		echo "〉Please, select the mining pool."
-		PS3="➤ Pool: "
+		echo "$(tput setaf 3)●$(tput sgr 0) Please, select the mining pool."
+		PS3="$(tput setaf 3)➤$(tput sgr 0) Pool: "
 	fi
 
 	options=("CTR - Europe" "CTR - Asia" "Other" "Exit")
@@ -23,8 +23,8 @@ add_pool()
 				server[$1]="eu.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
-					read -p "➤ Enter wallet address: " wallet
-					read -p "➤ Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
 					#read -p "➤ How many threads to use? [Enter for all] " threads
 				fi
 				break
@@ -37,9 +37,9 @@ add_pool()
 				server[$1]="as.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
-					read -p "➤ Enter wallet address: " wallet
-					read -p "➤ Enter workder name: " worker
-					#read -p "➤ How many threads to use? [Enter for all] " threads
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -48,17 +48,17 @@ add_pool()
 				echo "╒══════════════════════════════"
 				echo "│ Custom pool"
 				echo "╘══════════════════════════════"
-				read -p "➤ Enter server address: " server[$1]
-				read -p "➤ Enter server port: " port[$1]
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server address: " server[$1]
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
-					read -p "➤ Enter wallet address: " wallet
-					read -p "➤ Enter workder name: " worker
-					#read -p "➤ How many threads to use? [Enter for all] " threads
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
 				fi
 				break
 				;;
 			4) clear; exit 0;;
-			*) echo "〉Invalid option."; continue;;
+			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done
 }
@@ -88,7 +88,27 @@ start_mining()
 		THREAD="-t ${threads} "
 	fi
 
-	./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+	if [ ! -f "coreminer" ]; then
+		echo "$(tput setaf 1)●$(tput sgr 0) Miner not found!"
+		exit 2
+	fi
+
+	if [[ -x "coreminer" ]]; then
+		run $LARGE_PAGES $HARD_AES $POOLS $THREAD
+	else
+		chmod +x coreminer
+		run $LARGE_PAGES $HARD_AES $POOLS $THREAD
+	fi
+}
+
+run()
+{
+	case $(./coreminer --noeval $1 $2 $3 $4 2>&1) in
+	    *"cannot execute binary file"*)
+	        echo >&2 "$(tput setaf 1)●$(tput sgr 0) The miner is not compatible with your CPU architecture!"
+			exit 3
+	        ;;
+	esac
 }
 
 validate_wallet()
@@ -117,11 +137,11 @@ validate_wallet()
 		done
 		OPERAND=`echo $SUM``echo $CHECKSUM`
 		if [[ `echo "$OPERAND % 97" | $BC` -ne 1 ]]; then
-			echo "Invalid wallet!"
+			echo "$(tput setaf 1)●$(tput sgr 0) Invalid wallet!"
 			exit 1
 		fi
 	else
-		echo "〉Not able to validate wallet! (Install 'bc' if needed.)"
+		echo "$(tput setaf 3)●$(tput sgr 0) Not able to validate wallet! (Install 'bc' if needed.)"
 	fi
 }
 
@@ -137,8 +157,7 @@ compose_stratum()
 
 export_config()
 {
-	echo "${@:2}"
-	echo "\c" > $1
+	> $1
 	for setting in "${@:2}"
 	do
 	    echo $setting >> $1
@@ -162,36 +181,36 @@ echo
 
 CONFIG=pool.cfg
 if [ -f "$CONFIG" ]; then
-    echo "〉Mine settings file '$CONFIG' exists."
-	echo "〉Importing settings."
+    echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' exists."
+	echo "$(tput setaf 2)●$(tput sgr 0) Importing settings."
 	import_config $CONFIG
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
-	echo "〉Wallet validated."
+	echo "$(tput setaf 2)●$(tput sgr 0) Wallet validated."
 	STRATUM=""
-	echo "〉Configuring stratum server."
+	echo "$(tput setaf 2)●$(tput sgr 0) Configuring stratum server."
 	for i in "${!server[@]}"
 	do
 		STRATUM+=`compose_stratum "$ICANWALLET" "${server[$i]}" "${port[$i]}" "$worker"`
 		STRATUM+=" "
 	done
-	echo "〉Starting mining command."
+	echo "$(tput setaf 2)●$(tput sgr 0) Starting mining command."
 	start_mining "$threads" $STRATUM
 else
-    echo "〉Mine settings file '$CONFIG' doesn't exist."
-	echo "〉Proceeding with setup."
+    echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
+	echo "$(tput setaf 2)●$(tput sgr 0) Proceeding with setup."
 	echo
 	LOOP=1
 	add_pool $LOOP
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
-	echo "〉Wallet validated."
+	echo "$(tput setaf 2)●$(tput sgr 0) Wallet validated."
 
 	echo
 	(( LOOP++ ))
 	while true
 	do
-		read -r -p "➤ Do you wish to add additional pool? [yes/no] " back
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Do you wish to add additional pool? [yes/no] " back
 		case $back in
 			[yY][eE][sS]|[yY])
 				add_pool $LOOP
@@ -201,13 +220,13 @@ else
 				break
 	            ;;
 			*)
-	            echo "Invalid input. [yes,no]"
+	            echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
 	            ;;
 		esac
 	done
 
 	echo
-	echo "➤ Saving the settings."
+	echo "$(tput setaf 2)●$(tput sgr 0) Saving the settings."
 
 	EXPORTDATA=""
 	if [[ "$threads" -gt "0" ]]; then
@@ -223,7 +242,7 @@ else
 	echo
 	while true
 	do
-		read -r -p "➤ Start mining now? [yes/no] " mine
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Start mining now? [yes/no] " mine
 		case $mine in
 			[yY][eE][sS]|[yY])
 				STRATUM=""
@@ -238,7 +257,7 @@ else
 	            exit 0
 	            ;;
 			*)
-	            echo "Invalid input. [yes,no]"
+	            echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
 	            ;;
 		esac
 	done

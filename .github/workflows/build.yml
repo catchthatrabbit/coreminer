@@ -22,7 +22,6 @@ jobs:
       run: |
         mkdir build/artifacts
         cp build/coreminer/coreminer build/artifacts
-        cp coreminer_runner.sh build/artifacts
         cp mine.sh build/artifacts
     - name: Upload
       if: github.ref == 'refs/heads/master'

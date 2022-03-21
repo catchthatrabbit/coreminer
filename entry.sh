@@ -18,8 +18,6 @@ fi
 if test -f "/usr/local/bin/coreminer"; then
   coreminer --noeval $LARGE_PAGES $HARD_AES $@
 else
-  if test -f "$PWD/coreminer"; then
-    chmod +x coreminer
-    ./coreminer --noeval $LARGE_PAGES $HARD_AES $@
-  fi
+  echo "Miner not found!"
+  exit 2
 fi

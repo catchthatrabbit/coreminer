@@ -77,8 +77,6 @@ jobs:
         token: ${{secrets.SECRET_TOKEN}}
     - name: Download artifacts
       uses: actions/download-artifact@v2
-      with:
-        name: ${{matrix.platform.os}}
     - name: Zip
       run: zip ${{ matrix.platform.path }}.zip ${{ matrix.platform.os }}/* -j
     - name: Upload release assets

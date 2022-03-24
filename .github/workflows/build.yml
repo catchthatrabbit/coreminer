@@ -4,8 +4,11 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -13,7 +16,7 @@ jobs:
         submodules: recursive
         token: ${{secrets.SECRET_TOKEN}}
     - name: Build
-      if: ${{ matrix.platform != 'windows-latest' }}
+      if: ${{ matrix.platform.os != 'windows-latest' }}
       run: |
         mkdir build && cd build
         cmake ..
@@ -27,7 +30,7 @@ jobs:
       if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.platform}}
+        name: ${{matrix.platform.path}}
         path: build/artifacts/*
   release:
     if: github.ref == 'refs/heads/master'
@@ -64,8 +67,11 @@ jobs:
     needs: release
     strategy:
       matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -75,24 +81,27 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v2
       with:
-        name: ${{matrix.platform.platform}}
+        name: ${{matrix.platform.path}}
     - name: Zip
-      run: zip ${{ matrix.platform }}.zip ${{ matrix.platform }}/* -j
+      run: zip ${{ matrix.platform.path }}.zip ${{ matrix.platform.path }}/* -j
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.url }}
-        asset_path: ./${{ matrix.platform }}.zip
-        asset_name: coreminer-${{ matrix.platform }}.zip
+        asset_path: ./${{ matrix.platform.path }}.zip
+        asset_name: coreminer-${{ matrix.platform.path }}.zip
         asset_content_type: application/zip
   docker:
     needs: release
     strategy:
       matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -102,5 +111,5 @@ jobs:
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
-        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform}}
+        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
         docker push --all-tags ghcr.io/catchthatrabbit/coreminer

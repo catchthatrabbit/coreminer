@@ -89,7 +89,7 @@ jobs:
         asset_name: coreminer-${{ matrix.platform.path }}.zip
         asset_content_type: application/zip
   docker:
-    needs: artifacts
+    needs: release
     strategy:
       matrix:
         platform: [

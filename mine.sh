@@ -11,15 +11,15 @@ add_pool()
 		PS3="$(tput setaf 3)➤$(tput sgr 0) Pool: "
 	fi
 
-	options=("CTR - Europe" "CTR - Europe (Backup)" "CTR - Asia" "CTR - Asia (Backup)" "Other" "Exit")
+	options=("CTR - Europe [EU]" "CTR - Europe - Backup [EU1]" "Other" "Exit")
 	select opt in "${options[@]}"
 	do
 		case "$REPLY" in
 			1)
 				echo
-				echo "╒══════════════════════════════"
+				echo "╒════════════════════════════════════"
 				echo "│ 🐰 pool $opt"
-				echo "╘══════════════════════════════"
+				echo "╘════════════════════════════════════"
 				server[$1]="eu.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
@@ -31,9 +31,9 @@ add_pool()
 				;;
 			2)
 				echo
-				echo "╒══════════════════════════════"
+				echo "╒════════════════════════════════════"
 				echo "│ 🐰 pool $opt"
-				echo "╘══════════════════════════════"
+				echo "╘════════════════════════════════════"
 				server[$1]="eu1.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
@@ -45,37 +45,9 @@ add_pool()
 				;;
 			3)
 				echo
-				echo "╒══════════════════════════════"
-				echo "│ 🐰 pool $opt"
-				echo "╘══════════════════════════════"
-				server[$1]="as.catchthatrabbit.com"
-				port[$1]=8008
-				if [[ "$1" -lt "2" ]]; then
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
-					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
-				fi
-				break
-				;;
-			4)
-				echo
-				echo "╒══════════════════════════════"
-				echo "│ 🐰 pool $opt"
-				echo "╘══════════════════════════════"
-				server[$1]="as1.catchthatrabbit.com"
-				port[$1]=8008
-				if [[ "$1" -lt "2" ]]; then
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
-					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
-				fi
-				break
-				;;
-			5)
-				echo
-				echo "╒══════════════════════════════"
+				echo "╒════════════════════════════════════"
 				echo "│ Custom pool"
-				echo "╘══════════════════════════════"
+				echo "╘════════════════════════════════════"
 				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server address: " server[$1]
 				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
@@ -85,7 +57,7 @@ add_pool()
 				fi
 				break
 				;;
-			6) clear; exit 0;;
+			4) clear; exit 0;;
 			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done

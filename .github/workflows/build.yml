@@ -88,23 +88,3 @@ jobs:
         asset_path: ./${{ matrix.platform.path }}.zip
         asset_name: coreminer-${{ matrix.platform.path }}.zip
         asset_content_type: application/zip
-  docker:
-    needs: release
-    strategy:
-      matrix:
-        platform: [
-          {os: ubuntu-latest, path: linux-x86_64},
-          {os: raspbian-private, path: linux-arm64},
-        ]
-    runs-on: ${{matrix.platform.os}}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
-    - name: Docker
-      run: |
-        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
-        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
-        docker push --all-tags ghcr.io/catchthatrabbit/coreminer

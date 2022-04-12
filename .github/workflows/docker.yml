@@ -1,0 +1,29 @@
+name: corecoin docker
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  docker:
+    strategy:
+      matrix:
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.SECRET_TOKEN}}
+    - name: Version
+      id: version
+      run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
+    - name: Docker
+      run: |
+        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
+        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{steps.version.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
+        docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
+        docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}

@@ -11,7 +11,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.CORE_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Build
       if: ${{ matrix.platform != 'windows-latest' }}
       run: |
@@ -41,7 +41,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.CORE_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Version
       id: version_bump
       uses: anothrNick/github-tag-action@1.13.0
@@ -70,8 +70,11 @@ jobs:
         ]
     runs-on: ${{matrix.platform.os}}
     steps:
-    - name: Checkout repo
+    - name: Checkout repository and submodules
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Download artifacts
       uses: actions/download-artifact@v2
     - name: Zip

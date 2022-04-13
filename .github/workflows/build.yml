@@ -44,7 +44,7 @@ jobs:
         token: ${{secrets.GITHUB_TOKEN}}
     - name: Version
       id: version_bump
-      uses: anothrNick/github-tag-action@1.13.0
+      uses: anothrNick/github-tag-action@1.38.0
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         DEFAULT_BUMP: "patch"

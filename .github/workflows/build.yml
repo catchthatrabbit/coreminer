@@ -11,7 +11,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Build
       if: ${{ matrix.platform != 'windows-latest' }}
       run: |
@@ -42,10 +42,10 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Version
       id: version_bump
-      uses: anothrNick/github-tag-action@1.13.0
+      uses: anothrNick/github-tag-action@1.38.0
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         DEFAULT_BUMP: "patch"
@@ -75,7 +75,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Download artifacts
       uses: actions/download-artifact@v2
     - name: Zip
@@ -103,9 +103,10 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        token: ${{secrets.SECRET_TOKEN}}
+        token: ${{secrets.GITHUB_TOKEN}}
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
         docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
-        docker push --all-tags ghcr.io/catchthatrabbit/coreminer
+        docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
+        docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}

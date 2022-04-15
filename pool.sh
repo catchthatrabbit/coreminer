@@ -36,7 +36,7 @@ start_mining()
 		THREAD="-t ${threads} "
 	fi
 
-	if [ ! -f "coreminer" ]; then
+	if test -f "/usr/local/bin/coreminer"; then
 		exit 4
 	fi
 

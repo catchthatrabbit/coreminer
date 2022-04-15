@@ -15,14 +15,14 @@ start_mining()
 {
 	LARGE_PAGES=""
 	if [ -f /proc/sys/vm/nr_hugepages ]; then
-	    if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
-	        LARGE_PAGES="--large-pages"
-	    fi
+			if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
+					LARGE_PAGES="--large-pages"
+			fi
 	fi
 
 	HARD_AES=""
 	if [ $(grep aes /proc/cpuinfo >/dev/null 2>&1 | wc -c) -ne 0 ];	then
-	  HARD_AES="--hard-aes"
+		HARD_AES="--hard-aes"
 	fi
 
 	POOLS=""
@@ -41,10 +41,10 @@ start_mining()
 	fi
 
 	if [[ -x "coreminer" ]]; then
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 	else
 		chmod +x coreminer
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 	fi
 }
 
@@ -90,29 +90,29 @@ compose_stratum()
 }
 
 if [[ -z "$1" ]]; then
-  exit 1
+	exit 1
 else
-  ICANWALLET=${1//[[:blank:]]/}
+	ICANWALLET=${1//[[:blank:]]/}
 fi
 
 validate_wallet $ICANWALLET
 
 if [[ "$2" =~ ^[0-9a-zA-Z-_]{1,50}$ ]]; then
-  WORKER=$2
+	WORKER=$2
 else
-  RAND=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
-  WORKER="worker-$RAND"
+	RAND=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
+	WORKER="worker-$RAND"
 fi
 
 STRATUM=""
 for poolport in "${@:3}"
 do
-  STRATUM+=`compose_stratum "$ICANWALLET" "$poolport" "$WORKER"`
-  STRATUM+=" "
+	STRATUM+=`compose_stratum "$ICANWALLET" "$poolport" "$WORKER"`
+	STRATUM+=" "
 done
 
 if [[ -z "$STRATUM" ]]; then
-  exit 3
+	exit 3
 fi
 
 start_mining "" $STRATUM

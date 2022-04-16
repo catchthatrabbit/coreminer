@@ -36,16 +36,7 @@ start_mining()
 		THREAD="-t ${threads} "
 	fi
 
-	if test -f "/usr/local/bin/coreminer"; then
-		exit 4
-	fi
-
-	if [[ -x "coreminer" ]]; then
-		coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
-	else
-		chmod +x coreminer
-		coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
-	fi
+	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
 }
 
 validate_wallet()

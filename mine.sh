@@ -73,7 +73,7 @@ start_mining()
 	fi
 
 	HARD_AES=""
-	if [ $(grep aes /proc/cpuinfo >/dev/null 2>&1 | wc -c) -ne 0 ];	then
+	if [ $(grep aes /proc/cpuinfo 2>&1 | wc -c) -ne 0 ];	then
 	  HARD_AES="--hard-aes"
 	fi
 

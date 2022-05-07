@@ -73,7 +73,7 @@ start_mining()
 	fi
 
 	HARD_AES=""
-	if [ $(grep aes /proc/cpuinfo >/dev/null 2>&1 | wc -c) -ne 0 ];	then
+	if [ $(grep aes /proc/cpuinfo 2>&1 | wc -c) -ne 0 ];	then
 	  HARD_AES="--hard-aes"
 	fi
 
@@ -85,7 +85,7 @@ start_mining()
 
 	THREAD=""
 	if [[ "$1" -gt "0" ]]; then
-		THREAD="-t ${threads} "
+		THREAD="-t ${1}"
 	fi
 
 	if [ ! -f "coreminer" ]; then
@@ -187,7 +187,7 @@ if [ -f "$CONFIG" ]; then
 	echo "$(tput setaf 2)●$(tput sgr 0) Starting mining command."
 	start_mining "$threads" $STRATUM
 else
-    echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
+  echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
 	echo "$(tput setaf 2)●$(tput sgr 0) Proceeding with setup."
 	echo
 	LOOP=1

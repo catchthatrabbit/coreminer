@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Input parameters
-# $1 = wallet
-# $2 = worker name
-# $3 = pool:port
+# $1 = wallet (required; will be verified)
+# $2 = worker name (optional; "" - explicit null - for skip)
+# $3 = api ip:port (optional; "" - explicit null - for skip)
+# $4 = pool:port (required; one or more)
 
 # Exit codes
 # 1 = Wallet not defined.
@@ -21,22 +22,27 @@ start_mining()
 	fi
 
 	HARD_AES=""
-	if [ $(grep aes /proc/cpuinfo >/dev/null 2>&1 | wc -c) -ne 0 ];	then
+	if [ $(grep aes /proc/cpuinfo 2>&1 | wc -c) -ne 0 ];	then
 		HARD_AES="--hard-aes"
 	fi
 
+	API=""
+	if [ -n "$2" ];	then
+		API="--api-bind ${2}"
+	fi
+
 	POOLS=""
-	for pool in "${@:2}"
+	for pool in "${@:3}"
 	do
 		POOLS+="-P ${pool} "
 	done
 
 	THREAD=""
 	if [[ "$1" -gt "0" ]]; then
-		THREAD="-t ${threads} "
+		THREAD="-t ${1}"
 	fi
 
-	coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+	coreminer --noeval $LARGE_PAGES $HARD_AES $API $POOLS $THREAD
 }
 
 validate_wallet()
@@ -88,7 +94,7 @@ fi
 
 validate_wallet $ICANWALLET
 
-if [[ "$2" =~ ^[0-9a-zA-Z-_]{1,50}$ ]]; then
+if [[ "$2" =~ ^[-0-9a-zA-Z_]{1,50}$ ]]; then
 	WORKER=$2
 else
 	RAND=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
@@ -96,7 +102,7 @@ else
 fi
 
 STRATUM=""
-for poolport in "${@:3}"
+for poolport in "${@:4}"
 do
 	STRATUM+=`compose_stratum "$ICANWALLET" "$poolport" "$WORKER"`
 	STRATUM+=" "
@@ -106,4 +112,4 @@ if [[ -z "$STRATUM" ]]; then
 	exit 3
 fi
 
-start_mining "" $STRATUM
+start_mining "" "${3}" $STRATUM

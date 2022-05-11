@@ -8,14 +8,16 @@
 
 * [Install](#install)
 * [Usage](#usage)
+* [Limitations](#limitations)
 * [Build](#build)
+* [Pools](#pools)
 
 ## Install
 
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
 the [Releases](https://github.com/catchthatrabbit/coreminer/releases) section.
 Download an archive for your operating system and unpack the content to a place
-accessible from command line. The coreminer is ready to go.
+accessible from command line. The Coreminer is ready to go.
 
 ## Usage
 
@@ -36,7 +38,23 @@ We are providing additional scripts to start mining easily:
 
 ### How to start mining
 
-Check our [instruction](https://catchthatrabbit.com/start-mining) to start mining process.
+1. Download latest release of [Coreminer](https://github.com/catchthatrabbit/coreminer/releases).
+1. You have several options how to run it: `standalone`, `docker container`
+
+#### Standalone
+
+1. Navigate to the directory, where is `Coreminer` with `cd …` command.
+1. Make the script `mine.sh` executable with the command: `chmod +x mine.sh`.
+1. Start the mine script in the terminal with `bash mine.sh`.
+1. Follow the steps in the terminal.
+
+Optionally:
+
+Follow the [post-installation steps](docs/AUTOSTART-LINUX.md) from documentation.
+
+## Limitations
+
+The Coreminer is released for Linux distributions and require `GLIBC_2.33`.
 
 ## Build
 
@@ -44,6 +62,18 @@ Check our [instruction](https://catchthatrabbit.com/start-mining) to start minin
 
 See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 
+### API documentation
+
+You can read more about [API](docs/API.md) in the documentation.
+
+## Pools
+
+CTR [instructions](https://catchthatrabbit.com/start-mining) to start mining process.
+
+Read more about [Stratum server](docs/STRATUM.md) in the documentation.
+
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
+
+*Cryptoni confidimus*

@@ -1,29 +1,108 @@
----
-name: Bug report
-about: Create a report to help us improve
----
+name: Report Bug
+description: Create a bug report.
+title: "[BUG] "
+labels:
+  - bug
+assignees:
+  - raisty
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please, provide as much details as possible to make proper evaluation and in the end resolve the bug report faster.
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+  - type: markdown
+    attributes:
+      value: |
+        Hardware details.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to "..."
-2. Click on "..."
-3. Scroll down to "..."
-4. See error
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Used device.
+      placeholder: Device name
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: CPU Architecture
+      options:
+        - arm
+        - arm-be
+        - arm64
+        - arm64-be
+        - x86
+        - x86-64
+    validations:
+      required: true
 
-**Screenshots (Optional)**
-If applicable, add screenshots to help explain your problem.
+  - type: input
+    id: cpubrand
+    attributes:
+      label: CPU brand
+      description: Brand of used CPU.
+      placeholder: CPU brand
 
-**Environment (please complete the following information):**
-- Operating System: [e.g. Windows 10]
-- Hardware [e.g. GTX 1070]
-- Ethminer Version [e.g. 0.14]
-- Ethminer options used
+  - type: input
+    id: cpumodel
+    attributes:
+      label: CPU model
+      description: Model of used CPU.
+      placeholder: CPU model
 
-**Additional context**
-Add any other context about the problem here.
+  - type: markdown
+    attributes:
+      value: |
+        Software specific details.
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      description: Name and version of OS used.
+      placeholder: OS
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Software version
+      description: Version of software used.
+      placeholder: Version
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug
+    attributes:
+      label: Bug
+      description: Describe the Bug.
+      placeholder: Bug description
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduce Bug
+      description: Steps to reproduce the behavior.
+      placeholder: 1. Step 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe the result you are expecting.
+      placeholder: Result
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Please, place additional content or screenshots.

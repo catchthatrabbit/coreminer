@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Discussion
+    url: https://coretalk.info/c/mining/11/
+    about: Discussion about mining on the Core Blockchain.
+  - name: Quick Start
+    url: https://catchthatrabbit.com/start-mining
+    about: To start mining, please follow this guide.
+  - name: Support
+    url: https://catchthatrabbit.com/contact
+    about: Contact support.

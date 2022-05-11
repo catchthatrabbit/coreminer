@@ -89,7 +89,7 @@ sudo apt install libdbus-1-dev
 
 Complete sample Windows batch file - **adapt it to your system**. Assumes that:
 
-* it's placed one folder up from the ethminer source folder
+* it's placed one folder up from the coreminer source folder
 * you have CMake installed
 * you have Perl installed
 
@@ -104,8 +104,8 @@ rem add Perl in PATH; it's needed for OpenSSL build
 set "PERL_PATH=C:\Perl\perl\bin"
 set "PATH=%PERL_PATH%;%PATH%"
 
-rem switch to ethminer's source folder
-cd "%~dp0\ethminer\"
+rem switch to coreminer's source folder
+cd "%~dp0\coreminer\"
 
 if not exist "build\" mkdir "build\"
 

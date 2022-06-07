@@ -65,6 +65,14 @@ add_pool()
 
 start_mining()
 {
+
+  SECURE_JIT=""
+  cOS=$(uname -a | awk '{print $(1)}')
+  cPLT=$(uname -a | awk '{print $(NF)}')
+  if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
+      SECURE_JIT="--jit-secure"
+  fi
+
 	LARGE_PAGES=""
 	if [ -f /proc/sys/vm/nr_hugepages ]; then
 	    if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
@@ -94,10 +102,10 @@ start_mining()
 	fi
 
 	if [[ -x "coreminer" ]]; then
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
 	else
 		chmod +x coreminer
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
 	fi
 }
 

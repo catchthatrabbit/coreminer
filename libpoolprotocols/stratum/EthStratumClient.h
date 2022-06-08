@@ -5,7 +5,6 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
 #include <boost/lockfree/queue.hpp>
 
 #include <json/json.h>

@@ -22,7 +22,6 @@
 #include <thread>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>

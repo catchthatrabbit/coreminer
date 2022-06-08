@@ -7,6 +7,12 @@ set(SOURCES
 	getwork/EthGetworkClient.h getwork/EthGetworkClient.cpp
 )
 
+# Emulate HunterGate:
+# * https://github.com/hunter-packages/gate
+include("../common.cmake")
+
+project(download-openssl)
+
 hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 

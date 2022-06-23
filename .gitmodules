@@ -1,10 +1,12 @@
 [submodule "cmake/Hunter/disabled-mode"]
 	path = cmake/Hunter/disabled-mode
-	url = git@github.com:hunter-packages/disabled-mode.git
+	url = https://github.com/hunter-packages/disabled-mode.git
+	branch = master
 [submodule "cmake/cable"]
 	path = cmake/cable
-	url = git@github.com:ethereum/cable.git
+	url = https://github.com/ethereum/cable.git
 	branch = master
 [submodule "RandomY"]
 	path = RandomY
-	url = git@github.com:core-coin/RandomY.git
+	url = https://github.com/core-coin/RandomY.git
+	branch = master

@@ -18,6 +18,7 @@
 
 #include <libethcore/Farm.h>
 #include <libethash-cpu/CPUMiner.h>
+#include <ethash/global_context.hpp>
 
 namespace dev
 {

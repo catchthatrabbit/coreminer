@@ -7,5 +7,5 @@ set(SOURCES
 include_directories(BEFORE ..)
 
 add_library(ethcore ${SOURCES})
-target_link_libraries(ethcore PUBLIC devcore ethash::ethash)
+target_link_libraries(ethcore PUBLIC devcore ethash::ethash ethash::global-context)
 target_link_libraries(ethcore PUBLIC ethash-cpu)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 include(cmake/cable/bootstrap.cmake)
 
 include(CableBuildInfo)
@@ -13,8 +13,8 @@ cable_configure_toolchain(DEFAULT cxx11)
 set(HUNTER_CONFIGURATION_TYPES Release CACHE STRING "Build type of Hunter packages")
 set(HUNTER_JOBS_NUMBER 6 CACHE STRING "Number of parallel builds used by Hunter")
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.112.tar.gz"
-    SHA1 "4b894e1d5d203f0cc9a77431dbb1b486ab6f4430"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.24.2.tar.gz"
+    SHA1 "17fd3b9f0b8c271eac9b71e30a6aa1b9fecab299"
     LOCAL
 )
 

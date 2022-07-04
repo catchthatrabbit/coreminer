@@ -18,6 +18,7 @@
 
 #include <libethcore/Farm.h>
 #include <libethash-cpu/CPUMiner.h>
+#include <ethash/global_context.hpp>
 
 namespace dev
 {
@@ -244,7 +245,7 @@ void Farm::restart()
  */
 void Farm::restart_async()
 {
-    m_io_strand.get_io_service().post(m_io_strand.wrap(boost::bind(&Farm::restart, this)));
+    m_io_strand.context().post(m_io_strand.wrap(boost::bind(&Farm::restart, this)));
 }
 
 /**

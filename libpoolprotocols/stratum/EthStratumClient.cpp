@@ -1,8 +1,8 @@
+#include "EthStratumClient.h"
 #include <coreminer/buildinfo.h>
 #include <libdevcore/Log.h>
 #include <ethash/ethash.hpp>
-
-#include "EthStratumClient.h"
+#include <boost/bind/bind.hpp>
 
 #ifdef _WIN32
 // Needed for certificates validation on TLS connections
@@ -10,6 +10,7 @@
 #endif
 
 using boost::asio::ip::tcp;
+using namespace boost::placeholders;
 
 EthStratumClient::EthStratumClient(int worktimeout, int responsetimeout)
   : PoolClient(),

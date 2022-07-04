@@ -3,7 +3,6 @@
 #include <regex>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <json/json.h>
@@ -15,7 +14,6 @@
 using namespace dev;
 using namespace dev::eth;
 using namespace std::chrono;
-
 using boost::asio::ip::tcp;
 
 class ApiConnection

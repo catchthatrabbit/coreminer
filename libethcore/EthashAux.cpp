@@ -18,6 +18,7 @@
 #include "EthashAux.h"
 
 #include <ethash/ethash.hpp>
+#include <ethash/global_context.hpp>
 
 using namespace dev;
 using namespace eth;

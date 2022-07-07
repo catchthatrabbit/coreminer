@@ -268,6 +268,9 @@ public:
         bool hardAes = false;
         app.add_flag("--hard-aes", hardAes, "Enable hard AES RandomY mode");
 
+        bool secureJIT = false;
+        app.add_flag("--jit-secure", secureJIT, "Enable secure JIT RandomY mode");
+
         // Exception handling is held at higher level
         app.parse(argc, argv);
 
@@ -276,6 +279,9 @@ public:
         }
         if (hardAes) {
             m_CPSettings.flags |= RANDOMX_FLAG_HARD_AES;
+        }
+        if (secureJIT) {
+            m_CPSettings.flags |= RANDOMX_FLAG_SECURE;
         }
         if (bhelp)
         {

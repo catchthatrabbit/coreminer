@@ -14,6 +14,13 @@
 
 start_mining()
 {
+  SECURE_JIT=""
+  cOS=$(uname -a | awk '{print $(1)}')
+  cPLT=$(uname -a | awk '{print $(NF)}')
+  if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
+      SECURE_JIT="--jit-secure"
+  fi
+
 	LARGE_PAGES=""
 	if [ -f /proc/sys/vm/nr_hugepages ]; then
 			if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
@@ -42,7 +49,7 @@ start_mining()
 		THREAD="-t ${1}"
 	fi
 
-	coreminer --noeval $LARGE_PAGES $HARD_AES $API $POOLS $THREAD
+	coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $API $POOLS $THREAD
 }
 
 validate_wallet()

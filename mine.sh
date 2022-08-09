@@ -147,9 +147,9 @@ compose_stratum()
 {
 	# scheme://wallet[.workername][:password]@hostname:port[/...]
 	if [[ -z "$4" ]]; then
-		echo "stratum://$1@$2:$3"
+		echo "stratum1+tcp://$1@$2:$3"
 	else
-		echo "stratum://$1.$4@$2:$3"
+		echo "stratum1+tcp://$1.$4@$2:$3"
 	fi
 }
 

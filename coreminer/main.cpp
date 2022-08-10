@@ -250,7 +250,8 @@ public:
         app.add_option("--api-password", m_api_password, "");
 
 #endif
-
+        app.add_option("--mining-threads", m_miningThreads, "")->capture_default_str()
+            ->check(CLI::Range(unsigned{1}, CPUMiner::getNumDevices()));
         app.add_flag("--list-devices", m_shouldListDevices, "");
         app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
         app.add_flag("--noeval", m_FarmSettings.noEval, "");
@@ -258,8 +259,6 @@ public:
         app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "")->capture_default_str()
             ->check(CLI::Range(1));
 
-        bool cpu_miner = true;
-        app.add_flag("--cpu", cpu_miner, "");
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "")->capture_default_str();
 
         bool largePages = false;
@@ -385,7 +384,7 @@ public:
     void execute()
     {
         if (m_minerType == MinerType::CPU)
-            CPUMiner::enumDevices(m_DevicesCollection);
+            CPUMiner::enumDevices(m_DevicesCollection, m_miningThreads);
 
         if (!m_DevicesCollection.size())
             throw std::runtime_error("No usable mining devices found");
@@ -788,6 +787,7 @@ private:
 
     // Physical Mining Devices descriptor
     std::map<std::string, DeviceDescriptor> m_DevicesCollection = {};
+    unsigned m_miningThreads = CPUMiner::getNumDevices();
 
     // Mining options
     MinerType m_minerType = MinerType::CPU;

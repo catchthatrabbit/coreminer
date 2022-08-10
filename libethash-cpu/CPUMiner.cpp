@@ -461,11 +461,9 @@ void CPUMiner::workLoop()
 }
 
 
-void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
+void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, unsigned _miningThreads)
 {
-    unsigned numDevices = getNumDevices();
-
-    for (unsigned i = 0; i < numDevices; i++)
+    for (unsigned i = 0; i < _miningThreads; i++)
     {
         string uniqueId;
         ostringstream s;

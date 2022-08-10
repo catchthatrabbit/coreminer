@@ -34,7 +34,8 @@ public:
     ~CPUMiner() override;
 
     static unsigned getNumDevices();
-    static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
+    static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection,
+        unsigned _miningThreads);
     static randomx_dataset* getRandomYDataset(randomx_flags flags);
     static void releaseRandomYDataset(randomx_flags flags);
     static void showRandomYFlags(randomx_flags flags);

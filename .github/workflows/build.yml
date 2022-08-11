@@ -105,7 +105,7 @@ jobs:
         token: ${{secrets.GITHUB_TOKEN}}
     - name: Docker
       run: |
-        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.SECRET_TOKEN}}
+        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.GITHUB_TOKEN}}
         docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
         docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
         docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}

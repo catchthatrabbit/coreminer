@@ -32,7 +32,6 @@ coreminer --help
 
 We are providing additional scripts to start mining easily:
 
-- `entry.sh` check for large pages, hard aes & mine
 - `mining.sh` mining inputs, additional checks of parameters & mine
 - `pool.sh` additional checks of parameters & mine with docker
 

@@ -10,5 +10,4 @@ RUN cd /coreminer && mkdir build && cd build && cmake .. && make -j4
 FROM alpine:3.14
 RUN apk add libgcc bash
 COPY --from=builder /coreminer/build/coreminer/coreminer /usr/local/bin/
-COPY --from=builder /coreminer/entry.sh /usr/local/bin/
 COPY --from=builder /coreminer/pool.sh /usr/local/bin/

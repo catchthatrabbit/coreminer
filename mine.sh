@@ -1,5 +1,14 @@
 #!/bin/bash
 
+units_available()
+{
+	if punits=$(nproc) ; then
+  	echo $punits
+	else
+		echo ""
+	fi
+}
+
 add_pool()
 {
 	if [[ "$1" -gt "1" ]]; then
@@ -11,6 +20,7 @@ add_pool()
 		PS3="$(tput setaf 3)➤$(tput sgr 0) Pool: "
 	fi
 
+	units=`units_available`
 	options=("CTR - Europe [EU]" "CTR - Europe - Backup [EU1]" "Other" "Exit")
 	select opt in "${options[@]}"
 	do
@@ -25,7 +35,8 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
-					#read -p "➤ How many threads to use? [Enter for all] " threads
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -39,7 +50,8 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
-					#read -p "➤ How many threads to use? [Enter for all] " threads
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
@@ -53,7 +65,8 @@ add_pool()
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
-					#read -p "$(tput setaf 3)➤$(tput sgr 0) How many threads to use? [Enter for all] " threads
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;

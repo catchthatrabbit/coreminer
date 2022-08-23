@@ -250,7 +250,7 @@ public:
         app.add_option("--api-password", m_api_password, "");
 
 #endif
-        app.add_option("--mining-threads", m_miningThreads, "")->capture_default_str()
+        app.add_option("-t,--threads", m_miningThreads, "Specify number of mining threads")->capture_default_str()
             ->check(CLI::Range(unsigned{1}, CPUMiner::getNumDevices()));
         app.add_flag("--list-devices", m_shouldListDevices, "");
         app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
@@ -481,13 +481,6 @@ public:
     {
         cout << "Coreminer - CPU ethash miner" << endl
              << "minimal usage : coreminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
-             << endl
-             << "Devices type options :" << endl
-             << endl
-             << "    By default coreminer will try to use all devices types" << endl
-             << "    it can detect. Optionally you can limit this behavior" << endl
-             << "    setting either of the following options" << endl
-             << "    --cpu               Development ONLY ! (NO MINING)" << endl
              << endl
              << "Connection options :" << endl
              << endl

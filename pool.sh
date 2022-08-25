@@ -14,12 +14,12 @@
 
 start_mining()
 {
-  SECURE_JIT=""
-  cOS=$(uname -a | awk '{print $(1)}')
-  cPLT=$(uname -a | awk '{print $(NF)}')
-  if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
-      SECURE_JIT="--jit-secure"
-  fi
+	SECURE_JIT=""
+	cOS=$(uname -a | awk '{print $(1)}')
+	cPLT=$(uname -a | awk '{print $(NF)}')
+	if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
+		SECURE_JIT="--jit-secure"
+	fi
 
 	LARGE_PAGES=""
 	if [ -f /proc/sys/vm/nr_hugepages ]; then
@@ -33,23 +33,13 @@ start_mining()
 		HARD_AES="--hard-aes"
 	fi
 
-	API=""
-	if [ -n "$2" ];	then
-		API="--api-bind ${2}"
-	fi
-
 	POOLS=""
-	for pool in "${@:3}"
+	for pool in "${@:1}"
 	do
 		POOLS+="-P ${pool} "
 	done
 
-	THREAD=""
-	if [[ "$1" -gt "0" ]]; then
-		THREAD="-t ${1}"
-	fi
-
-	coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $API $POOLS $THREAD
+	coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $API $POOLS $THREADS
 }
 
 validate_wallet()
@@ -93,30 +83,57 @@ compose_stratum()
 	fi
 }
 
-if [[ -z "$1" ]]; then
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --wallet)
+            WALLET="$2"
+            ;;
+        --worker)
+            if [[ "$2" =~ ^[-0-9a-zA-Z_]{1,50}$ ]]; then
+                WORKER="$2"
+            fi
+            ;;
+        --pool)
+            POOL+=("$2")
+            ;;
+        --api)
+            API="--api-bind $2"
+            ;;
+        --threads)
+            THREADS="--threads $2"
+            ;;
+        *)
+            printf "$1"
+            printf "* Error: Invalid argument.*\n"
+            exit 1
+    esac
+    shift
+    shift
+done
+
+if [[ -z "$WALLET" ]]; then
 	exit 1
 else
-	ICANWALLET=${1//[[:blank:]]/}
+	ICANWALLET=${WALLET//[[:blank:]]/}
 fi
 
 validate_wallet $ICANWALLET
 
-if [[ "$2" =~ ^[-0-9a-zA-Z_]{1,50}$ ]]; then
-	WORKER=$2
-else
+if [[ -z "$WORKER" ]]; then
 	RAND=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 	WORKER="worker-$RAND"
 fi
 
 STRATUM=""
-for poolport in "${@:4}"
+for poolport in "${POOL[@]}"
 do
-	STRATUM+=`compose_stratum "$ICANWALLET" "$poolport" "$WORKER"`
-	STRATUM+=" "
+    STRATUM+=`compose_stratum "$ICANWALLET" "$poolport" "$WORKER"`
+    STRATUM+=" "
 done
 
+printf STRATUM
 if [[ -z "$STRATUM" ]]; then
-	exit 3
+    exit 3
 fi
 
-start_mining "" "${3}" $STRATUM
+start_mining $STRATUM

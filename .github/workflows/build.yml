@@ -78,16 +78,16 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v2
     - name: Zip
-      run: zip ${{ matrix.platform.path }}.zip ${{ matrix.platform.os }}/* -j
+      run: tar -czvf ${{ matrix.platform.path }}.tar.gz ${{ matrix.platform.os }}/* -j
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.url }}
-        asset_path: ./${{ matrix.platform.path }}.zip
-        asset_name: coreminer-${{ matrix.platform.path }}.zip
-        asset_content_type: application/zip
+        asset_path: ./${{ matrix.platform.path }}.tar.gz
+        asset_name: coreminer-${{ matrix.platform.path }}.tar.gz
+        asset_content_type: application/gzip
   docker:
     needs: release
     strategy:

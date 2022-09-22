@@ -39,7 +39,7 @@ start_mining()
         POOLS+="-P ${pool} "
     done
 
-    coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $API $POOLS $THREADS
+    coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $ARGS
 }
 
 validate_wallet()
@@ -83,6 +83,7 @@ compose_stratum()
     fi
 }
 
+ARGS=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --wallet)
@@ -96,16 +97,12 @@ while [ $# -gt 0 ]; do
         --pool)
             POOL+=("$2")
             ;;
-        --api)
-            API="--api-bind $2"
-            ;;
-        --threads)
-            THREADS="--threads $2"
+        --args)
+            ARGS+="$2 "
             ;;
         *)
-            printf "$1"
             printf "* Error: Invalid argument.*\n"
-            exit 1
+            ;;
     esac
     shift
     shift

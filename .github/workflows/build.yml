@@ -15,6 +15,7 @@ jobs:
     - name: Build
       if: ${{ matrix.platform != 'windows-latest' }}
       run: |
+        docker scan alpine:3.14.2
         mkdir build && cd build
         cmake ..
         make -j4

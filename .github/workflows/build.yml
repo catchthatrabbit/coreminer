@@ -13,7 +13,6 @@ jobs:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
     - name: Build
-      if: ${{ matrix.platform != 'windows-latest' }}
       run: |
         mkdir build && cd build
         cmake ..

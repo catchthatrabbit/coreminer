@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Community Discussion
-    url: https://coretalk.info/c/mining/11/
+    url: https://github.com/catchthatrabbit/coreminer/discussions
     about: Discussion about mining on the Core Blockchain.
   - name: Quick Start
     url: https://catchthatrabbit.com/start-mining

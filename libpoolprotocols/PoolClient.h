@@ -30,7 +30,7 @@ struct Session
             .count();
     }
 
-    // EthereumStratum (1 and 2)
+    // CoreStratum (1 and 2)
 
     // Extranonce currently active
     uint64_t extraNonce = 0;
@@ -40,7 +40,7 @@ struct Session
     h256 nextWorkBoundary =
         h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
 
-    // EthereumStratum (2 only)
+    // CoreStratum (2 only)
     bool firstMiningSet = false;
     unsigned int timeout = 30;  // Default to 30 seconds
     string sessionId = "";

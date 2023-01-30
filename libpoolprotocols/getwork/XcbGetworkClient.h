@@ -16,11 +16,11 @@ using namespace std;
 using namespace dev;
 using namespace eth;
 
-class EthGetworkClient : public PoolClient
+class XcbGetworkClient : public PoolClient
 {
 public:
-    EthGetworkClient(int worktimeout, unsigned farmRecheckPeriod);
-    ~EthGetworkClient();
+    XcbGetworkClient(int worktimeout, unsigned farmRecheckPeriod);
+    ~XcbGetworkClient();
 
     void connect() override;
     void disconnect() override;

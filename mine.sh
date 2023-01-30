@@ -3,7 +3,7 @@
 units_available()
 {
 	if punits=$(nproc) ; then
-  	echo $punits
+		echo $punits
 	else
 		echo ""
 	fi
@@ -79,23 +79,23 @@ add_pool()
 start_mining()
 {
 
-  SECURE_JIT=""
-  cOS=$(uname -a | awk '{print $(1)}')
-  cPLT=$(uname -a | awk '{print $(NF)}')
-  if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
-      SECURE_JIT="--jit-secure"
-  fi
+	SECURE_JIT=""
+	cOS=$(uname -a | awk '{print $(1)}')
+	cPLT=$(uname -m)
+	if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
+		SECURE_JIT="--jit-secure"
+	fi
 
 	LARGE_PAGES=""
 	if [ -f /proc/sys/vm/nr_hugepages ]; then
-	    if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
-	        LARGE_PAGES="--large-pages"
-	    fi
+		if [ $(cat /proc/sys/vm/nr_hugepages) -gt 0 ]; then
+			LARGE_PAGES="--large-pages"
+		fi
 	fi
 
 	HARD_AES=""
 	if [ $(grep aes /proc/cpuinfo 2>&1 | wc -c) -ne 0 ];	then
-	  HARD_AES="--hard-aes"
+		HARD_AES="--hard-aes"
 	fi
 
 	POOLS=""
@@ -171,13 +171,56 @@ export_config()
 	> $1
 	for setting in "${@:2}"
 	do
-	    echo $setting >> $1
+		echo $setting >> $1
 	done
 }
 
 import_config()
 {
 	. $1
+}
+
+update_app()
+{
+	if [ -f "./mine.updated.sh" ]; then
+		mv -f mine.updted.sh mine.sh
+	fi
+	JSONDATA=$(curl -X GET --header "Accept: application/json" "https://api.github.com/repos/catchthatrabbit/coreminer/releases/latest")
+	TAG=$(echo ${JSONDATA} | awk '/tag_name/ { gsub(/[",]/,""); print $2}')
+	LATESTVER=$(echo ${TAG} | sed -r 's/^v//')
+	ARCH=$(uname -m)
+	if [ "$ARCH" == "aarch64" ]; then ARCH="arm64"; fi
+	PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
+	LATESTDOWN="https://github.com/catchthatrabbit/coreminer/releases/download/${TAG}/coreminer-${PLATFORM}-${ARCH}.tar.gz"
+	if [ -f "./coreminer" ]; then
+		VER=$(./coreminer -V | sed -n '2p' | sed 's/+commit\.\?[a-f0-9]*//')
+		printf -v versions '%s\n%s' "$VER" "$LATESTVER"
+		if [[ $versions = "$(sort -V <<< "$versions")" ]]; then
+			if curl --output /dev/null --silent --head --fail "$LATESTDOWN"; then
+				echo "$(tput setaf 2)●$(tput sgr 0) Downloading the update."
+				curl -OL "$LATESTDOWN"
+				tar -xzvf ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+				rm -f ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+				cd coreapp && mv -f coreminer ../coreminer && mv -f mine.sh ../mine.updated.sh
+				cd .. && rm -rf coreapp
+				echo "$(tput setaf 2)●$(tput sgr 0) Restarting the program."
+				./$(basename $0) && exit
+			else
+				echo "$(tput setaf 3)●$(tput sgr 0) Update not found for your system!"
+			fi
+		else
+			echo "$(tput setaf 2)●$(tput sgr 0) You have the latest version already."
+		fi
+	else
+		echo "$(tput setaf 2)●$(tput sgr 0) Software is not installed in this folder. Downloading the latest version."
+		curl -OL "$LATESTDOWN"
+		tar -xzvf ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+		rm -f ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+		cd coreapp && mv -f coreminer ../coreminer && mv -f mine.sh ../mine.updated.sh
+		cd .. && rm -rf coreapp
+		echo "$(tput setaf 2)●$(tput sgr 0) Restarting the program."
+		./$(basename $0) && exit
+	fi
 }
 
 while :
@@ -192,9 +235,12 @@ echo
 
 CONFIG=pool.cfg
 if [ -f "$CONFIG" ]; then
-    echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' exists."
+	echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' exists."
 	echo "$(tput setaf 2)●$(tput sgr 0) Importing settings."
 	import_config $CONFIG
+	if [ "$update" = true ]; then
+		update_app
+	fi
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
 	echo "$(tput setaf 2)●$(tput sgr 0) Wallet validated."
@@ -208,9 +254,26 @@ if [ -f "$CONFIG" ]; then
 	echo "$(tput setaf 2)●$(tput sgr 0) Starting mining command."
 	start_mining "$threads" $STRATUM
 else
-  echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
+	echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
 	echo "$(tput setaf 2)●$(tput sgr 0) Proceeding with setup."
 	echo
+	while true
+	do
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Check for the update? [yes/no] " upd
+		case $upd in
+			[yY][eE][sS]|[yY])
+				update_app
+				break
+					;;
+			[nN][oO]|[nN])
+				echo "$(tput setaf 2)●$(tput sgr 0) Update skipped."
+				break
+					;;
+			*)
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+					;;
+		esac
+	done
 	LOOP=1
 	add_pool $LOOP
 	ICANWALLET=${wallet//[[:blank:]]/}
@@ -226,13 +289,13 @@ else
 			[yY][eE][sS]|[yY])
 				add_pool $LOOP
 				(( LOOP++ ))
-	            ;;
+					;;
 			[nN][oO]|[nN])
 				break
-	            ;;
+					;;
 			*)
-	            echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
-	            ;;
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+					;;
 		esac
 	done
 
@@ -263,13 +326,13 @@ else
 				done
 				start_mining "$threads" $STRATUM
 				break
-	            ;;
+					;;
 			[nN][oO]|[nN])
-	            exit 0
-	            ;;
+				exit 0
+					;;
 			*)
-	            echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
-	            ;;
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+					;;
 		esac
 	done
 fi

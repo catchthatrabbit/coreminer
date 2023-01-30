@@ -3,8 +3,8 @@ set(SOURCES
 	PoolClient.h
 	PoolManager.h PoolManager.cpp
 	testing/SimulateClient.h testing/SimulateClient.cpp
-	stratum/EthStratumClient.h stratum/EthStratumClient.cpp
-	getwork/EthGetworkClient.h getwork/EthGetworkClient.cpp
+	stratum/XcbStratumClient.h stratum/XcbStratumClient.cpp
+	getwork/XcbGetworkClient.h getwork/XcbGetworkClient.cpp
 )
 
 hunter_add_package(OpenSSL)

@@ -162,7 +162,7 @@ void PoolManager::setClientHandlers()
         int _currentEpoch = m_currentWp.epoch;
         bool newEpoch = (_currentEpoch == -1);
 
-        // In EthereumStratum/2.0.0 epoch number is set in session
+        // In CoreStratum/2.0.0 epoch number is set in session
         if (!newEpoch)
         {
             if (p_client->getConnection()->StratumMode() == 3)
@@ -420,10 +420,10 @@ void PoolManager::rotateConnect()
 
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::GETWORK)
             p_client =
-                std::unique_ptr<PoolClient>(new EthGetworkClient(m_Settings.noWorkTimeout, m_Settings.getWorkPollInterval));
+                std::unique_ptr<PoolClient>(new XcbGetworkClient(m_Settings.noWorkTimeout, m_Settings.getWorkPollInterval));
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::STRATUM)
             p_client = std::unique_ptr<PoolClient>(
-                new EthStratumClient(m_Settings.noWorkTimeout, m_Settings.noResponseTimeout));
+                new XcbStratumClient(m_Settings.noWorkTimeout, m_Settings.noResponseTimeout));
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::SIMULATION)
             p_client = std::unique_ptr<PoolClient>(new SimulateClient(m_Settings.benchmarkBlock));
 

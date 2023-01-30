@@ -47,18 +47,18 @@ private:
     Verifier verifier_;
 };
 
-class EthStratumClient : public PoolClient
+class XcbStratumClient : public PoolClient
 {
 public:
     enum StratumProtocol
     {
         STRATUM = 0,
         ETHPROXY,
-        ETHEREUMSTRATUM,
-        ETHEREUMSTRATUM2
+        CORESTRATUM,
+        CORESTRATUM2
     };
 
-    EthStratumClient(int worktimeout, int responsetimeout);
+    XcbStratumClient(int worktimeout, int responsetimeout);
 
     void init_socket();
     void connect() override;

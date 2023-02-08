@@ -2,10 +2,8 @@ name: CoreMiner pipeline
 on: push
 jobs:
   build:
-    strategy:
-      matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/master'
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -17,17 +15,6 @@ jobs:
         mkdir build && cd build
         cmake ..
         make -j4
-    - name: Prepare
-      run: |
-        mkdir build/artifacts
-        cp build/coreminer/coreminer build/artifacts
-        cp mine.sh build/artifacts
-    - name: Upload
-      if: github.ref == 'refs/heads/master'
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{matrix.platform}}
-        path: build/artifacts/*
   release:
     if: github.ref == 'refs/heads/master'
     needs: build
@@ -59,6 +46,33 @@ jobs:
         release_name: coreminer ${{steps.version_bump.outputs.tag}}
         draft: false
         prerelease: false
+  pack:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, raspbian-private]
+    runs-on: ${{matrix.platform}}
+    needs: release
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{secrets.GITHUB_TOKEN}}
+    - name: Build
+      run: |
+        mkdir build && cd build
+        cmake .. -DPROJECT_VERSION=${{needs.release.outputs.url}}
+        make -j4
+    - name: Prepare
+      run: |
+        mkdir build/artifacts
+        cp build/coreminer/coreminer build/artifacts
+        cp mine.sh build/artifacts
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.platform}}
+        path: build/artifacts/*
   artifacts:
     needs: release
     strategy:

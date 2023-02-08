@@ -50,7 +50,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest, raspbian-private]
     runs-on: ${{matrix.platform}}
-    needs: [release, pack]
+    needs: release
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -73,7 +73,7 @@ jobs:
         name: ${{matrix.platform}}
         path: build/artifacts/*
   artifacts:
-    needs: release
+    needs: [release, pack]
     strategy:
       matrix:
         platform: [

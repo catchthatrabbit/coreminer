@@ -18,7 +18,7 @@ jobs:
         path: ~/.hunter
         key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
-          ${{ matrox.platform }}-hunter-cache-
+          ${{ matrix.platform }}-hunter-cache-
     - name: Build
       run: |
         mkdir build && cd build

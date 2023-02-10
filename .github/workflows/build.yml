@@ -58,8 +58,11 @@ jobs:
   pack:
     strategy:
       matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
     needs: release
     steps:
     - name: Checkout repository and submodules
@@ -71,10 +74,10 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.hunter
-        key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
-          ${{ matrox.platform }}-hunter-cache-
-     - name: Build
+          ${{ matrox.platform.os }}-hunter-cache-
+    - name: Build
       run: |
         mkdir build && cd build
         cmake .. -DPROJECT_VERSION=${{needs.release.outputs.url}}
@@ -84,30 +87,8 @@ jobs:
         mkdir build/artifacts
         cp build/coreminer/coreminer build/artifacts
         cp mine.sh build/artifacts
-    - name: Upload
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{matrix.platform}}
-        path: build/artifacts/*
-  artifacts:
-    needs: [release, pack]
-    strategy:
-      matrix:
-        platform: [
-          {os: ubuntu-latest, path: linux-x86_64},
-          {os: raspbian-private, path: linux-arm64},
-        ]
-    runs-on: ${{matrix.platform.os}}
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Download artifacts
-      uses: actions/download-artifact@v2
     - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz ${{ matrix.platform.os }}/*
+      run: tar -czvf ${{ matrix.platform.path }}.tar.gz build/artifacts/*
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:

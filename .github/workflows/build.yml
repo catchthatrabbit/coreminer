@@ -22,7 +22,7 @@ jobs:
         cmake ..
         make -j4
   release:
-    if: github.ref != 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}

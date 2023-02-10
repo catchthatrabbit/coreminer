@@ -2,14 +2,23 @@ name: CoreMiner pipeline
 on: push
 jobs:
   build:
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, raspbian-private]
+    runs-on: ${{matrix.platform}}
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
+    - name: Cache hunter
+      uses: actions/cache@v3
+      with:
+        path: ~/.hunter
+        key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.platform }}-hunter-cache-
     - name: Build
       run: |
         mkdir build && cd build
@@ -21,6 +30,7 @@ jobs:
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}
         url: ${{steps.create_release.outputs.upload_url}}
+    needs: build
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
@@ -48,8 +58,11 @@ jobs:
   pack:
     strategy:
       matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
+        platform: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.platform.os}}
     needs: release
     steps:
     - name: Checkout repository and submodules
@@ -57,6 +70,13 @@ jobs:
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
+    - name: Cache hunter
+      uses: actions/cache@v3
+      with:
+        path: ~/.hunter
+        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.platform.os }}-hunter-cache-
     - name: Build
       run: |
         mkdir build && cd build
@@ -67,30 +87,8 @@ jobs:
         mkdir build/artifacts
         cp build/coreminer/coreminer build/artifacts
         cp mine.sh build/artifacts
-    - name: Upload
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{matrix.platform}}
-        path: build/artifacts/*
-  artifacts:
-    needs: [release, pack]
-    strategy:
-      matrix:
-        platform: [
-          {os: ubuntu-latest, path: linux-x86_64},
-          {os: raspbian-private, path: linux-arm64},
-        ]
-    runs-on: ${{matrix.platform.os}}
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Download artifacts
-      uses: actions/download-artifact@v2
     - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz ${{ matrix.platform.os }}/*
+      run: tar -czvf ${{ matrix.platform.path }}.tar.gz build/artifacts/*
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:

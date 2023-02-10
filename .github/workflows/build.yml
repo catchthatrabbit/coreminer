@@ -80,15 +80,15 @@ jobs:
     - name: Build
       run: |
         mkdir build && cd build
-        cmake .. -DPROJECT_VERSION=${{needs.release.outputs.url}}
+        cmake .. -DPROJECT_VERSION=${{needs.release.outputs.tag}}
         make -j4
     - name: Prepare
       run: |
-        mkdir build/artifacts
-        cp build/coreminer/coreminer build/artifacts
-        cp mine.sh build/artifacts
+        mkdir ${{ matrix.platform.os }}
+        cp build/coreminer/coreminer ${{ matrix.platform.os }}
+        cp mine.sh ${{ matrix.platform.os }}
     - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz build/artifacts/*
+      run: tar -czvf ${{ matrix.platform.path }}.tar.gz ${{ matrix.platform.os }}/*
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:

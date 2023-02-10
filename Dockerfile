@@ -4,7 +4,7 @@
 FROM alpine:latest as builder
 
 ADD . /coreminer
-RUN apk add cmake make gcc g++ musl-dev perl linux-headers libexecinfo-dev libunwind
+RUN apk add cmake make gcc g++ musl-dev perl linux-headers libunwind
 RUN cd /coreminer && mkdir build && cd build && cmake .. && make -j4
 
 FROM alpine:latest

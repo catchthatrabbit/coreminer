@@ -3,20 +3,26 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
+    - name: Cache hunter
+      uses: actions/cache@v3
+      with:
+        path: ~/.hunter
+        key: ${{ runner.OS }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ runner.OS }}-hunter-cache-
     - name: Build
       run: |
         mkdir build && cd build
         cmake ..
         make -j4
   release:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}

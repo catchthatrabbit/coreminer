@@ -34,8 +34,8 @@
 #include <regex>
 #endif
 
-#if defined(__linux__) || defined(__APPLE__)
-#include <execinfo.h>
+//#if defined(__linux__) || defined(__APPLE__)
+//#include <execinfo.h>
 #elif defined(_WIN32)
 #include <Windows.h>
 #endif

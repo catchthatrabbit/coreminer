@@ -15,7 +15,7 @@ jobs:
     - name: Cache hunter
       uses: actions/cache@v3
       with:
-        path: ~/.hunter
+        path: .hunter
         key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
           ${{ matrix.platform }}-hunter-cache-
@@ -73,7 +73,7 @@ jobs:
     - name: Cache hunter
       uses: actions/cache@v3
       with:
-        path: ~/.hunter
+        path: .hunter
         key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
           ${{ matrix.platform.os }}-hunter-cache-
@@ -113,9 +113,16 @@ jobs:
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
+    - name: Cache hunter
+      uses: actions/cache@v3
+      with:
+        path: .hunter
+        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.platform.os }}-hunter-cache-
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.GITHUB_TOKEN}}
-        docker build --network=host . -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
+        docker build --network=host . --build-arg version=${{needs.release.outputs.tag}} -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
         docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
         docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}

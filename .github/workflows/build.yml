@@ -15,7 +15,7 @@ jobs:
     - name: Cache hunter
       uses: actions/cache@v3
       with:
-        path: .hunter
+        path: ~/.hunter
         key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
           ${{ matrix.platform }}-hunter-cache-
@@ -73,7 +73,7 @@ jobs:
     - name: Cache hunter
       uses: actions/cache@v3
       with:
-        path: .hunter
+        path: ~/.hunter
         key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
           ${{ matrix.platform.os }}-hunter-cache-
@@ -99,7 +99,7 @@ jobs:
         asset_name: coreminer-${{ matrix.platform.path }}.tar.gz
         asset_content_type: application/gzip
   docker:
-    needs: release
+    needs: [release, pack]
     strategy:
       matrix:
         platform: [
@@ -113,13 +113,6 @@ jobs:
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
-    - name: Cache hunter
-      uses: actions/cache@v3
-      with:
-        path: .hunter
-        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
-        restore-keys: |
-          ${{ matrix.platform.os }}-hunter-cache-
     - name: Docker
       run: |
         docker login ghcr.io -u ${{github.actor}} -p ${{secrets.GITHUB_TOKEN}}

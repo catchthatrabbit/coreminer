@@ -19,7 +19,7 @@ HunterGate(
 )
 
 project(coreminer)
-set(PROJECT_VERSION 0.19.73)
+set(PROJECT_VERSION)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

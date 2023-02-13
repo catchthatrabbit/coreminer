@@ -477,7 +477,7 @@ public:
 
     void help()
     {
-        cout << "Coreminer - CPU ethash miner" << endl
+        cout << "Coreminer - CPU CryptOre miner" << endl
              << "minimal usage : coreminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Connection options :" << endl
@@ -712,8 +712,8 @@ public:
                  << endl
                  << "        stratum     Stratum" << endl
                  << "        stratum1    Eth Proxy compatible" << endl
-                 << "        stratum2    EthereumStratum 1.0.0 (nicehash)" << endl
-                 << "        stratum3    EthereumStratum 2.0.0" << endl
+                 << "        stratum2    CoreStratum 1.0.0 (nicehash)" << endl
+                 << "        stratum3    CoreStratum 2.0.0" << endl
                  << endl
                  << "    Transport variants :" << endl
                  << endl
@@ -830,10 +830,10 @@ int main(int argc, char** argv)
 
     // Always out release version
     auto* bi = coreminer_get_buildinfo();
-    cout << endl
-         << endl
-         << "coreminer " << bi->project_version << endl
-         << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
+    cout << "coreminer" << endl
+         << bi->project_version << endl
+         << "build" << endl
+         << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
          << endl;
 
     if (argc < 2)

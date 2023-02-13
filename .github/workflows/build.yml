@@ -84,11 +84,11 @@ jobs:
         make -j4
     - name: Prepare
       run: |
-        mkdir ${{ matrix.platform.os }}
-        cp build/coreminer/coreminer ${{ matrix.platform.os }}
-        cp mine.sh ${{ matrix.platform.os }}
+        mkdir coreapp
+        cp build/coreminer/coreminer coreapp
+        cp mine.sh coreapp
     - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz ${{ matrix.platform.os }}/*
+      run: tar -czvf ${{ matrix.platform.path }}.tar.gz coreapp/*
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:

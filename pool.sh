@@ -16,8 +16,8 @@ start_mining()
 {
     SECURE_JIT=""
     cOS=$(uname -a | awk '{print $(1)}')
-    cPLT=$(uname -a | awk '{print $(NF)}')
-    if [ "$cOS" == "Darwin" ] && [ "$cPLT" == "arm64" ]; then
+    cPLT=$(uname -m)
+    if [ "$cOS" == "Darwin" ] && ([ "$cPLT" == "arm64" ] || [ "$cPLT" == "aarch64" ]); then
         SECURE_JIT="--jit-secure"
     fi
 

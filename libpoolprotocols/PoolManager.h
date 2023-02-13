@@ -9,8 +9,8 @@
 #include <libethcore/Miner.h>
 
 #include "PoolClient.h"
-#include "getwork/EthGetworkClient.h"
-#include "stratum/EthStratumClient.h"
+#include "getwork/XcbGetworkClient.h"
+#include "stratum/XcbStratumClient.h"
 #include "testing/SimulateClient.h"
 
 using namespace std;

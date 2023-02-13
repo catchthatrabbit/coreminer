@@ -832,7 +832,7 @@ int main(int argc, char** argv)
     auto* bi = coreminer_get_buildinfo();
     cout << "coreminer" << endl
          << bi->project_version << endl
-         << "build" endl
+         << "build" << endl
          << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
          << endl;
 

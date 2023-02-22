@@ -31,7 +31,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -43,7 +43,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -55,7 +55,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -67,7 +67,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -79,7 +79,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -91,7 +91,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -103,7 +103,7 @@ add_pool()
 				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi

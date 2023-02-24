@@ -21,59 +21,106 @@ add_pool()
 	fi
 
 	units=`units_available`
-	options=("CTR - Europe [EU]" "CTR - Europe - Backup [EU1]" "Other" "Exit")
+	options=("CTR EU" "CTR EU Backup" "CTR AS" "CTR AS Backup" "CTR US" "CTR US Backup" "Other" "Exit")
 	select opt in "${options[@]}"
 	do
 		case "$REPLY" in
 			1)
-				echo
-				echo "╒════════════════════════════════════"
-				echo "│ 🐰 pool $opt"
-				echo "╘════════════════════════════════════"
+				pool_heading $opt
 				server[$1]="eu.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
 			2)
-				echo
-				echo "╒════════════════════════════════════"
-				echo "│ 🐰 pool $opt"
-				echo "╘════════════════════════════════════"
-				server[$1]="eu1.catchthatrabbit.com"
+			pool_heading $opt
+			server[$1]="eu1.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
 			3)
-				echo
-				echo "╒════════════════════════════════════"
-				echo "│ Custom pool"
-				echo "╘════════════════════════════════════"
-				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server address: " server[$1]
-				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
+			pool_heading $opt
+			server[$1]="as.catchthatrabbit.com"
+				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter workder name: " worker
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
-			4) clear; exit 0;;
+			4)
+			pool_heading $opt
+			server[$1]="as1.catchthatrabbit.com"
+				port[$1]=8008
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			5)
+			pool_heading $opt
+			server[$1]="us.catchthatrabbit.com"
+				port[$1]=8008
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			6)
+			pool_heading $opt
+			server[$1]="us1.catchthatrabbit.com"
+				port[$1]=8008
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			7)
+			pool_heading $opt
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server address: " server[$1]
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
+				if [[ "$1" -lt "2" ]]; then
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
+					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
+					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
+				fi
+				break
+				;;
+			8) clear; exit 0;;
 			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done
+}
+
+pool_heading()
+{
+	echo
+	echo "╒════════════════════════════════════"
+	echo "│ Pool $1"
+	echo "╘════════════════════════════════════"
 }
 
 start_mining()
@@ -223,17 +270,25 @@ update_app()
 	fi
 }
 
+extdrive_check()
+{
+	EXTCONF=$(lsblk -nlo mountpoint | awk '$0 ~ /^\/media\/[^/]+\/coredrive/ {print}')
+	if [ -z "$EXTCONF" ]; then
+		echo "pool.cfg"
+	else
+		echo "${EXTCONF}/pool.cfg"
+	fi
+}
+
 while :
 do
 
 clear
-echo "  _____             __  ____"
-echo " / ___/__  _______ /  |/  (_)__  ___ ____"
-echo "/ /__/ _ \/ __/ -_) /|_/ / / _ \/ -_) __/"
-echo "\___/\___/_/  \__/_/  /_/_/_//_/\__/_/"
+echo " ▄▀▀ ▄▀▄ █▀▄ ██▀   ██▄ ▄▀▀ █▄█ █▄ █"
+echo " ▀▄▄ ▀▄▀ █▀▄ █▄▄   █▄█ ▀▄▄ █ █ █ ▀█"
 echo
 
-CONFIG=pool.cfg
+CONFIG=`extdrive_check`
 if [ -f "$CONFIG" ]; then
 	echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' exists."
 	echo "$(tput setaf 2)●$(tput sgr 0) Importing settings."

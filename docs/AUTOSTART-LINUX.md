@@ -7,8 +7,12 @@ You can autostart the miner on Linux distribution using unit `service` under the
 Please, follow few steps, which can differ depends on your OS used.
 
 You can choose one of the installation types:
-- [Manual Installation](#manual-installation)
-- [Automatic Installation](#automatic-installation)
+- [Coreminer Autostart](#coreminer-autostart)
+  - [Installation](#installation)
+  - [Manual Installation](#manual-installation)
+    - [Optional steps](#optional-steps)
+  - [Automatic Installation](#automatic-installation)
+  - [Troubleshooting](#troubleshooting)
 
 ## Manual Installation
 
@@ -20,19 +24,19 @@ Contents of file `coreverif.service`:
 ```bash
 [Unit]
 Description=CoreVerificator
-StartLimitIntervalSec=0
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
+WorkingDirectory=$(pwd)
+ExecStart=/bin/bash $(pwd)/mine.sh
 Restart=always
 RestartSec=3
-WorkingDirectory=/home/kali/coreminer
-ExecStart=/bin/bash /home/kali/coreminer/mine.sh
 TimeoutStartSec=0
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 ```
 
 1. Create file `coreverif.service` and save it into `/etc/systemd/system/` folder.
@@ -48,33 +52,7 @@ WantedBy=default.target
 
 ## Automatic Installation
 
-1. First, you need to locate yourself at the location, where you have `mine.sh` script. (To move between folders, you can use `cd` command.)
-1. The SUDO is required to run the script.
-1. Execute the command to register the service:
-
-```bash
-bash <(curl -s https://gist.githubusercontent.com/rastislavcore/7b0373d1dd98e95ce59cc5d023a7160e/raw/71f31b9c54ea4e740e5a8ff54811d42faffbfe4e/install_verificator_service.sh)
-```
-
-> Additional automatic commands:
-
-### Disable service
-
-```bash
-bash <(curl -s https://gist.githubusercontent.com/rastislavcore/7b0373d1dd98e95ce59cc5d023a7160e/raw/71f31b9c54ea4e740e5a8ff54811d42faffbfe4e/disable_verificator_service.sh)
-```
-
-### Enable service
-
-```bash
-bash <(curl -s https://gist.githubusercontent.com/rastislavcore/7b0373d1dd98e95ce59cc5d023a7160e/raw/71f31b9c54ea4e740e5a8ff54811d42faffbfe4e/enable_verificator_service.sh)
-```
-
-### Uninstall service
-
-```bash
-bash <(curl -s https://gist.githubusercontent.com/rastislavcore/7b0373d1dd98e95ce59cc5d023a7160e/raw/71f31b9c54ea4e740e5a8ff54811d42faffbfe4e/delete_verificator_service.sh)
-```
+Automatic installation is included in the `mine.sh` script. You can use it for the first setup or for the reinstallation.
 
 ## Troubleshooting
 

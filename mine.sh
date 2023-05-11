@@ -162,10 +162,10 @@ start_mining()
 	fi
 
 	if [[ -x "coreminer" ]]; then
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD &
 	else
 		chmod +x coreminer
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD &
 	fi
 }
 
@@ -230,10 +230,10 @@ import_config()
 update_app()
 {
 	if [ -f "./mine.updated.sh" ]; then
-		mv -f mine.updted.sh mine.sh
+		mv -f mine.updated.sh mine.sh
 	fi
 	JSONDATA=$(curl -X GET --header "Accept: application/json" "https://api.github.com/repos/catchthatrabbit/coreminer/releases/latest")
-	TAG=$(echo ${JSONDATA} | awk '/tag_name/ { gsub(/[",]/,""); print $2}')
+	TAG=$(echo "${JSONDATA}" | awk 'BEGIN{RS=","} /tag_name/{gsub(/.*: "/,"",$0); gsub(/"/,"",$0); print $0}')
 	LATESTVER=$(echo ${TAG} | sed -r 's/^v//')
 	ARCH=$(uname -m)
 	if [ "$ARCH" == "aarch64" ]; then ARCH="arm64"; fi
@@ -251,7 +251,7 @@ update_app()
 				cd coreapp && mv -f coreminer ../coreminer && mv -f mine.sh ../mine.updated.sh
 				cd .. && rm -rf coreapp
 				echo "$(tput setaf 2)●$(tput sgr 0) Restarting the program."
-				./$(basename $0) && exit
+				exec ./mine.sh
 			else
 				echo "$(tput setaf 3)●$(tput sgr 0) Update not found for your system!"
 			fi
@@ -261,13 +261,54 @@ update_app()
 	else
 		echo "$(tput setaf 2)●$(tput sgr 0) Software is not installed in this folder. Downloading the latest version."
 		curl -OL "$LATESTDOWN"
-		tar -xzvf ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
-		rm -f ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
-		cd coreapp && mv -f coreminer ../coreminer && mv -f mine.sh ../mine.updated.sh
-		cd .. && rm -rf coreapp
-		echo "$(tput setaf 2)●$(tput sgr 0) Restarting the program."
-		./$(basename $0) && exit
+		FILENAME="coreminer-${PLATFORM}-${ARCH}.tar.gz"
+		GZIP_MAGIC_NUMBER=$(head -c 2 "${FILENAME}" | od -N 2 -t x1 | awk 'NR==1 { printf("%s%s\n", $2, $3) }')
+		if [ "${GZIP_MAGIC_NUMBER}" == "1f8b" ]; then
+			tar -xzvf ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+			rm -f ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+			cd coreapp && mv -f coreminer ../coreminer && mv -f mine.sh ../mine.updated.sh
+			cd .. && rm -rf coreapp
+			echo "$(tput setaf 2)●$(tput sgr 0) Restarting the program."
+			exec ./mine.updated.sh
+		else
+			echo "$(tput setaf 1)●$(tput sgr 0) Downloaded file is not in gzip format. Update failed."
+			echo "$(tput setaf 1)●$(tput sgr 0) Please, download the latest version manually."
+			rm -f ./"coreminer-${PLATFORM}-${ARCH}.tar.gz"
+			exit 3
+		fi
 	fi
+}
+
+autostart_service()
+{
+	if [ -f "/etc/systemd/system/coreminer.service" ]; then
+		echo "$(tput setaf 2)●$(tput sgr 0) Autostart service already exists."
+		return
+	fi
+	echo "$(tput setaf 2)●$(tput sgr 0) Creating autostart service."
+	> /etc/systemd/system/coreminer.service
+	echo "[Unit]" >> /etc/systemd/system/coreminer.service
+	echo "Description=CoreVerificator" >> /etc/systemd/system/coreminer.service
+	echo "After=network.target" >> /etc/systemd/system/coreminer.service
+	echo "StartLimitIntervalSec=0" >> /etc/systemd/system/coreminer.service
+	echo "" >> /etc/systemd/system/coreminer.service
+	echo "[Service]" >> /etc/systemd/system/coreminer.service
+	echo "Type=simple" >> /etc/systemd/system/coreminer.service
+	echo "WorkingDirectory=$(pwd)" >> /etc/systemd/system/coreminer.service
+	echo "ExecStart=/bin/bash $(pwd)/mine.sh" >> /etc/systemd/system/coreminer.service
+	echo "Restart=always" >> /etc/systemd/system/coreminer.service
+	echo "RestartSec=3" >> /etc/systemd/system/coreminer.service
+	echo "TimeoutStartSec=0" >> /etc/systemd/system/coreminer.service
+	echo "" >> /etc/systemd/system/coreminer.service
+	echo "[Install]" >> /etc/systemd/system/coreminer.service
+	echo "WantedBy=multi-user.target" >> /etc/systemd/system/coreminer.service
+	systemctl daemon-reload
+	systemctl enable coreminer.service
+	echo "$(tput setaf 2)●$(tput sgr 0) Autostart service created."
+	echo "$(tput setaf 2)●$(tput sgr 0) Vacuuming journal."
+	journalctl --rotate && journalctl --vacuum-time=1d
+	echo "$(tput setaf 2)●$(tput sgr 0) Starting autostart service and script."
+	systemctl start coreminer.service
 }
 
 extdrive_check()
@@ -367,6 +408,25 @@ else
 		EXPORTDATA+=" server[$i]=${server[$i]} port[$i]=${port[$i]}"
 	done
 	export_config $EXPORTDATA
+
+	echo
+	while true
+	do
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Add the autostart service? [yes/no] " autostart
+		case $autostart in
+			[yY][eE][sS]|[yY])
+				autostart_service
+				exit 0
+				break
+					;;
+			[nN][oO]|[nN])
+				break
+					;;
+			*)
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+					;;
+		esac
+	done
 
 	echo
 	while true

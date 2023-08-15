@@ -162,10 +162,10 @@ start_mining()
 	fi
 
 	if [[ -x "coreminer" ]]; then
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD &
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
 	else
 		chmod +x coreminer
-		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD &
+		./coreminer --noeval $LARGE_PAGES $HARD_AES $SECURE_JIT $POOLS $THREAD
 	fi
 }
 

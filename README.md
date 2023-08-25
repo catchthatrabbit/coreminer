@@ -30,7 +30,7 @@ accessible from command line. The CoreMiner is ready to go.
 You can initiate automatic installation by running the script in a Linux terminal:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/catchthatrabbit/coreminer/master/mine.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/catchthatrabbit/coreminer/master/mine.sh)
 ```
 
 We are recommending running the [post-installation steps](docs/AUTOSTART-LINUX.md) to remain in high availability.

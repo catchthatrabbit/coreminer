@@ -27,13 +27,25 @@ accessible from command line. The CoreMiner is ready to go.
 
 ### Automatic Installation
 
-You can initiate automatic installation by running the script in a Linux terminal:
+#### Pre-requirements
+
+The `curl` tool is required for the automatic installation as it is used to fetch the installation script.
+
+If you don't have `curl` installed on your Linux system, you can install it with the following command:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/catchthatrabbit/coreminer/master/mine.sh)
+sudo apt-get install curl
 ```
 
-We are recommending running the [post-installation steps](docs/AUTOSTART-LINUX.md) to remain in high availability.
+#### Execution
+
+To start the automatic installation, execute the following command in your Linux terminal:
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/catchthatrabbit/coreminer/master/mine.sh)
+```
+
+After the installation completes, we recommend proceeding with the [post-installation steps](docs/AUTOSTART-LINUX.md) to ensure continuous high availability.
 
 ## Usage
 

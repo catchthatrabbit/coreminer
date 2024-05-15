@@ -9,6 +9,59 @@ units_available()
 	fi
 }
 
+request_worker_name() {
+	echo "$(tput setaf 3)●$(tput sgr 0) Enter worker name. Choose format:"
+	echo "1) Regular name (alphanumeric and underscores/hyphens)"
+	echo "2) Fediverse user (e.g., _usernameInstanceTld-id)"
+	echo "3) Random (e.g., worker-34874)"
+	read -p "$(tput setaf 3)➤$(tput sgr 0) Selection (1, 2, or 3): " choice
+
+	case $choice in
+		1)
+			while true; do
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter regular name: " worker
+				if [[ $worker =~ ^[a-zA-Z0-9_-]+$ ]]; then
+					break
+				else
+					echo "$(tput setaf 1)●$(tput sgr 0) Invalid format, please use alphanumeric characters, underscores, or hyphens."
+				fi
+			done
+			;;
+		2)
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter username (alphanumeric): " username
+			while ! [[ $username =~ ^[a-zA-Z0-9]+$ ]]; do
+				echo "$(tput setaf 1)●$(tput sgr 0) Invalid username, must be alphanumeric."
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter username (alphanumeric): " username
+			done
+			username=$(echo "$username" | awk '{print tolower($0)}') # convert to lowercase
+
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter domain (instance.tld): " domain
+			# Transform domain according to the specification
+			formatted_domain=$(echo "$domain" | sed -E 's/(^|\.)([a-z])/\U&/g' | tr -d '.')
+
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter optional ID (alphanumeric, can be skipped): " id
+			while ! [[ $id =~ ^[a-zA-Z0-9]*$ ]]; do
+				echo "$(tput setaf 1)●$(tput sgr 0) Invalid ID, must be alphanumeric."
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter optional ID (alphanumeric, can be skipped): " id
+			done
+
+			worker="_${username}${formatted_domain}"
+			if [[ -n $id ]]; then
+				worker+="-${id}"
+			fi
+			;;
+		3)
+			random_number=$(shuf -i 10000-99999 -n 1) # Generate a random number
+			worker="worker-${random_number}"
+			;;
+		*)
+			echo "$(tput setaf 1)●$(tput sgr 0) Invalid choice, try again."
+			request_worker_name
+			;;
+	esac
+	echo "$(tput setaf 2)●$(tput sgr 0) Worker name is: $worker"
+}
+
 add_pool()
 {
 	if [[ "$1" -gt "1" ]]; then
@@ -21,17 +74,18 @@ add_pool()
 	fi
 
 	units=`units_available`
-	options=("CTR EU" "CTR EU Backup" "CTR AS" "CTR AS Backup" "CTR US" "CTR US Backup" "Other" "Exit")
+	options=("DACH Pool 🇩🇪🇦🇹🇨🇭" "Northeast EU Pool 🇫🇮" "ASEAN Pool 🇸🇬" "East Asian Pool 🇭🇰" "American Pool 🌎" "American 1 Pool 🌎" "Other" "Exit")
+	IFS=$'\n'
 	select opt in "${options[@]}"
 	do
 		case "$REPLY" in
 			1)
 				pool_heading $opt
-				server[$1]="eu.catchthatrabbit.com"
+				server[$1]="de.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -39,11 +93,11 @@ add_pool()
 				;;
 			2)
 			pool_heading $opt
-			server[$1]="eu1.catchthatrabbit.com"
+			server[$1]="fi.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -51,11 +105,11 @@ add_pool()
 				;;
 			3)
 			pool_heading $opt
-			server[$1]="as.catchthatrabbit.com"
+			server[$1]="sg.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -63,11 +117,11 @@ add_pool()
 				;;
 			4)
 			pool_heading $opt
-			server[$1]="as1.catchthatrabbit.com"
+			server[$1]="hk.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -75,11 +129,11 @@ add_pool()
 				;;
 			5)
 			pool_heading $opt
-			server[$1]="us.catchthatrabbit.com"
+			server[$1]="am.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -87,11 +141,11 @@ add_pool()
 				;;
 			6)
 			pool_heading $opt
-			server[$1]="us1.catchthatrabbit.com"
+			server[$1]="am1.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -103,7 +157,7 @@ add_pool()
 				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -113,13 +167,14 @@ add_pool()
 			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done
+	IFS=$' \t\n'
 }
 
 pool_heading()
 {
 	echo
 	echo "╒════════════════════════════════════"
-	echo "│ Pool $1"
+	echo "│ $1"
 	echo "╘════════════════════════════════════"
 }
 
@@ -355,7 +410,7 @@ else
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Check for the update? [yes/no] " upd
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Check for the update? [Yes/No] " upd
 		case $upd in
 			[yY][eE][sS]|[yY])
 				update_app
@@ -366,7 +421,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -380,7 +435,7 @@ else
 	(( LOOP++ ))
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Do you wish to add additional pool? [yes/no] " back
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Do you wish to add additional pool? [Yes/No] " back
 		case $back in
 			[yY][eE][sS]|[yY])
 				add_pool $LOOP
@@ -390,7 +445,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -412,7 +467,7 @@ else
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Add the autostart service? [yes/no] " autostart
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Add the autostart service? [Yes/No] " autostart
 		case $autostart in
 			[yY][eE][sS]|[yY])
 				autostart_service
@@ -423,7 +478,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -431,7 +486,7 @@ else
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Start mining now? [yes/no] " mine
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Start mining now? [Yes/No] " mine
 		case $mine in
 			[yY][eE][sS]|[yY])
 				STRATUM=""
@@ -446,7 +501,7 @@ else
 				exit 0
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done

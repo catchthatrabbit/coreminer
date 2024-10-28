@@ -1,105 +1,7 @@
-name: CoreMiner pipeline
+name: CoreMiner build
 on: push
 jobs:
   build:
-    strategy:
-      matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Cache hunter
-      uses: actions/cache@v3
-      with:
-        path: ~/.hunter
-        key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
-        restore-keys: |
-          ${{ matrix.platform }}-hunter-cache-
-    - name: Build
-      run: |
-        mkdir build && cd build
-        cmake ..
-        make -j4
-  release:
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    outputs:
-        tag: ${{steps.version_bump.outputs.tag}}
-        url: ${{steps.create_release.outputs.upload_url}}
-    needs: build
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Version
-      id: version_bump
-      uses: anothrNick/github-tag-action@1.38.0
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        DEFAULT_BUMP: "patch"
-        RELEASE_BRANCHES: "master"
-        WITH_V: true
-    - name: Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        tag_name: ${{steps.version_bump.outputs.tag}}
-        release_name: coreminer ${{steps.version_bump.outputs.tag}}
-        draft: false
-        prerelease: false
-  pack:
-    strategy:
-      matrix:
-        platform: [
-          {os: ubuntu-latest, path: linux-x86_64},
-          {os: raspbian-private, path: linux-arm64},
-        ]
-    runs-on: ${{matrix.platform.os}}
-    needs: release
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Cache hunter
-      uses: actions/cache@v3
-      with:
-        path: ~/.hunter
-        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
-        restore-keys: |
-          ${{ matrix.platform.os }}-hunter-cache-
-    - name: Build
-      run: |
-        mkdir build && cd build
-        cmake .. -DPROJECT_VERSION=${{needs.release.outputs.tag}}
-        make -j4
-    - name: Prepare
-      run: |
-        mkdir coreapp
-        cp build/coreminer/coreminer coreapp
-        cp mine.sh coreapp
-    - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz coreapp/*
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.release.outputs.url }}
-        asset_path: ./${{ matrix.platform.path }}.tar.gz
-        asset_name: coreminer-${{ matrix.platform.path }}.tar.gz
-        asset_content_type: application/gzip
-  docker:
-    needs: [release, pack]
     strategy:
       matrix:
         platform: [
@@ -109,13 +11,85 @@ jobs:
     runs-on: ${{matrix.platform.os}}
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
-    - name: Docker
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.hunter
+        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.platform.os }}-hunter-cache-
+    - name: Version
+      id: version
+      run: echo "tag=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT
+    - name: Build
       run: |
-        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.GITHUB_TOKEN}}
-        docker build --network=host . --build-arg version=${{needs.release.outputs.tag}} -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
-        docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
-        docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
+        mkdir build && cd build
+        cmake .. -DPROJECT_VERSION=${{steps.version.outputs.tag}}
+        make -j4
+    - name: Prepare
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        mkdir coreapp
+        cp build/coreminer/coreminer coreapp
+        cp mine.sh coreapp
+    - name: Upload
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: actions/upload-artifact@v4
+      with:
+        name: coreminer-${{ matrix.config.path }}
+        path: coreapp/*
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{secrets.GITHUB_TOKEN}}
+    - name: Artifacts linux x86_64
+      uses: actions/download-artifact@v4
+      with:
+        name: coreminer-linux-x86_64
+        path: coreminer-linux-x86_64
+    - name: Artifacts linux arm64
+      uses: actions/download-artifact@v4
+      with:
+        name: coreminer-linux-arm64
+        path: coreminer-linux-arm64
+    - name: Version
+      id: version
+      run: echo "tag=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT
+    - name: Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        tag_name: ${{steps.version_bump.outputs.tag}}
+        release_name: coreminer ${{steps.version.outputs.tag}}
+        draft: false
+        prerelease: false
+    - name: Upload Linux x86_64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.url }}
+        asset_path: ./coreminer-linux-x86_64
+        asset_name: coreminer-linux-x86_64
+        asset_content_type: application/gzip
+    - name: Upload linux arm64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.url }}
+        asset_path: ./coreminer-linux-arm64
+        asset_name: coreminer-linux-arm64
+        asset_content_type: application/gzip

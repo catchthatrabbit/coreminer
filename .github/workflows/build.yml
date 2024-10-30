@@ -1,7 +1,38 @@
 name: CoreMiner build
-on: push
+on: [push, pull_request]
 jobs:
+  release:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+        tag: ${{steps.version_bump.outputs.tag}}
+        url: ${{steps.create_release.outputs.upload_url}}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{secrets.GITHUB_TOKEN}}
+    - name: Version
+      id: version_bump
+      uses: anothrNick/github-tag-action@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        DEFAULT_BUMP: "patch"
+        RELEASE_BRANCHES: "master"
+        WITH_V: true
+    - name: Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        tag_name: ${{steps.version_bump.outputs.tag}}
+        release_name: coreminer ${{steps.version_bump.outputs.tag}}
+        draft: false
+        prerelease: false
   build:
+    if: github.ref != 'refs/heads/master'
     strategy:
       matrix:
         config: [
@@ -9,8 +40,6 @@ jobs:
           {os: raspbian-private, path: linux-arm64},
         ]
     runs-on: ${{matrix.config.os}}
-    outputs:
-        tag: ${{steps.version.outputs.tag}}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -24,83 +53,56 @@ jobs:
         key: ${{ matrix.config.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
           ${{ matrix.config.os }}-hunter-cache-
-    - name: Version
-      #if: github.ref == 'refs/heads/master'
-      id: version
-      uses: anothrNick/github-tag-action@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        DEFAULT_BUMP: "patch"
-        RELEASE_BRANCHES: "master"
-        WITH_V: true
     - name: Build
       run: |
         mkdir build && cd build
-        cmake .. -DPROJECT_VERSION=${{steps.version.outputs.tag}}
-        make -j4
-    - name: Prepare
-      #if: github.ref == 'refs/heads/master'
-      run: |
-        mkdir coreapp
-        cp build/coreminer/coreminer coreapp
-        cp mine.sh coreapp
-    - name: Upload
-      #if: github.ref == 'refs/heads/master'
-      uses: actions/upload-artifact@v4
-      with:
-        name: coreminer-${{ matrix.config.path }}
-        path: coreapp/*
-  release:
-    runs-on: ubuntu-latest
-    needs: build
-    #if: github.ref == 'refs/heads/master'
+        cmake .. -DPROJECT_VERSION=0.0.0
+        make -j$(nproc)
+  artifacts:
+    strategy:
+      matrix:
+        config: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.config.os}}
+    needs: release
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
-    - name: Artifacts linux x86_64
-      uses: actions/download-artifact@v4
+    - name: Cache
+      uses: actions/cache@v4
       with:
-        name: coreminer-linux-x86_64
-        path: coreminer-linux-x86_64
-    - name: Artifacts linux arm64
-      uses: actions/download-artifact@v4
-      with:
-        name: coreminer-linux-arm64
-        path: coreminer-linux-arm64
-    - name: Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        tag_name: ${{needs.build.outputs.tag}}
-        release_name: CoreMiner ${{needs.build.outputs.tag}}
-        draft: false
-        prerelease: false
-    - name: Upload Linux x86_64
+        path: ~/.hunter
+        key: ${{ matrix.config.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.config.os }}-hunter-cache-
+    - name: Build
+      run: |
+        mkdir build && cd build
+        cmake .. -DPROJECT_VERSION=${{needs.release.outputs.tag}}
+        make -j$(nproc)
+    - name: Zip
+      run: |
+        mkdir coreapp
+        cp build/coreminer/coreminer coreapp
+        cp mine.sh coreapp
+        tar -czvf ${{ matrix.config.path }}.tar.gz coreapp/*
+    - name: Upload
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.url }}
-        asset_path: ./coreminer-linux-x86_64
-        asset_name: coreminer-linux-x86_64
-        asset_content_type: application/gzip
-    - name: Upload linux arm64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.url }}
-        asset_path: ./coreminer-linux-arm64
-        asset_name: coreminer-linux-arm64
+        upload_url: ${{ needs.release.outputs.url }}
+        asset_path: ./${{ matrix.config.path }}.tar.gz
+        asset_name: coreminer-${{ matrix.config.path }}.tar.gz
         asset_content_type: application/gzip
   docker:
     runs-on: ubuntu-latest
-    needs: [build, release]
+    needs: release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -116,10 +118,12 @@ jobs:
         run: |
           docker buildx create --use
           docker buildx build \
-            --build-arg version=${{needs.build.outputs.tag}} \
+            --build-arg version=${{needs.release.outputs.tag}} \
             --platform linux/amd64,linux/arm64 \
-            --tag ghcr.io/catchthatrabbit/coreminer:${{ needs.build.outputs.tag }} \
+            --tag ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}} \
             --tag ghcr.io/catchthatrabbit/coreminer:latest \
             --push .
       - name: Verify
-        run: docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:latest
+        run: |
+          docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}
+          docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:latest

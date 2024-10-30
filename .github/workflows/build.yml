@@ -119,6 +119,7 @@ jobs:
         run: |
           docker buildx create --use
           docker buildx build \
+            --network host \
             --build-arg version=${{needs.release.outputs.tag}} \
             --platform linux/amd64,linux/arm64 \
             --tag ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}} \

@@ -2,7 +2,7 @@ name: CoreMiner build
 on: [push, pull_request]
 jobs:
   release:
-    if: github.ref == 'refs/heads/master'
+    #if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}
@@ -32,7 +32,8 @@ jobs:
         draft: false
         prerelease: false
   build:
-    if: github.ref != 'refs/heads/master'
+    if: false
+    #if: github.ref != 'refs/heads/master'
     strategy:
       matrix:
         config: [

@@ -9,6 +9,8 @@ jobs:
           {os: raspbian-private, path: linux-arm64},
         ]
     runs-on: ${{matrix.platform.os}}
+    outputs:
+        tag: ${{steps.version.outputs.tag}}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -23,21 +25,27 @@ jobs:
         restore-keys: |
           ${{ matrix.platform.os }}-hunter-cache-
     - name: Version
+      if: github.ref == 'refs/heads/master'
       id: version
-      run: echo "tag=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT
+      uses: anothrNick/github-tag-action@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        DEFAULT_BUMP: "patch"
+        RELEASE_BRANCHES: "master"
+        WITH_V: true
     - name: Build
       run: |
         mkdir build && cd build
         cmake .. -DPROJECT_VERSION=${{steps.version.outputs.tag}}
         make -j4
     - name: Prepare
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: github.ref == 'refs/heads/master'
       run: |
         mkdir coreapp
         cp build/coreminer/coreminer coreapp
         cp mine.sh coreapp
     - name: Upload
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v4
       with:
         name: coreminer-${{ matrix.config.path }}
@@ -45,7 +53,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/master'
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -62,16 +70,13 @@ jobs:
       with:
         name: coreminer-linux-arm64
         path: coreminer-linux-arm64
-    - name: Version
-      id: version
-      run: echo "tag=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT
     - name: Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       with:
-        tag_name: ${{steps.version_bump.outputs.tag}}
+        tag_name: ${{needs.build.version.outputs.tag}}
         release_name: coreminer ${{steps.version.outputs.tag}}
         draft: false
         prerelease: false
@@ -93,3 +98,28 @@ jobs:
         asset_path: ./coreminer-linux-arm64
         asset_name: coreminer-linux-arm64
         asset_content_type: application/gzip
+  docker:
+    runs-on: ubuntu-latest
+    needs: [build, release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build
+        run: |
+          docker buildx create --use
+          docker buildx build \
+            --build-arg version=${{needs.build.outputs.tag}} \
+            --platform linux/amd64,linux/arm64 \
+            --tag ghcr.io/catchthatrabbit/coreminer:${{ needs.build.version.outputs.tag }} \
+            --tag ghcr.io/catchthatrabbit/coreminer:latest \
+            --push .
+      - name: Verify
+        run: docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:latest

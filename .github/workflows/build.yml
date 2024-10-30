@@ -76,8 +76,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       with:
-        tag_name: ${{needs.build.version.outputs.tag}}
-        release_name: CoreMiner ${{needs.build.version.outputs.tag}}
+        tag_name: ${{needs.build.outputs.tag}}
+        release_name: CoreMiner ${{needs.build.outputs.tag}}
         draft: false
         prerelease: false
     - name: Upload Linux x86_64
@@ -118,7 +118,7 @@ jobs:
           docker buildx build \
             --build-arg version=${{needs.build.outputs.tag}} \
             --platform linux/amd64,linux/arm64 \
-            --tag ghcr.io/catchthatrabbit/coreminer:${{ needs.build.version.outputs.tag }} \
+            --tag ghcr.io/catchthatrabbit/coreminer:${{ needs.build.outputs.tag }} \
             --tag ghcr.io/catchthatrabbit/coreminer:latest \
             --push .
       - name: Verify

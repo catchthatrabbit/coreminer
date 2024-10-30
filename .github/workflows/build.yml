@@ -4,11 +4,11 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [
+        config: [
           {os: ubuntu-latest, path: linux-x86_64},
           {os: raspbian-private, path: linux-arm64},
         ]
-    runs-on: ${{matrix.platform.os}}
+    runs-on: ${{matrix.config.os}}
     outputs:
         tag: ${{steps.version.outputs.tag}}
     steps:
@@ -21,9 +21,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.hunter
-        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        key: ${{ matrix.config.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
-          ${{ matrix.platform.os }}-hunter-cache-
+          ${{ matrix.config.os }}-hunter-cache-
     - name: Version
       #if: github.ref == 'refs/heads/master'
       id: version

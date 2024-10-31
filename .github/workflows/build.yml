@@ -1,45 +1,21 @@
-name: CoreMiner pipeline
+name: CoreMiner build
 on: push
 jobs:
-  build:
-    strategy:
-      matrix:
-        platform: [ubuntu-latest, raspbian-private]
-    runs-on: ${{matrix.platform}}
-    steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Cache hunter
-      uses: actions/cache@v3
-      with:
-        path: ~/.hunter
-        key: ${{ matrix.platform }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
-        restore-keys: |
-          ${{ matrix.platform }}-hunter-cache-
-    - name: Build
-      run: |
-        mkdir build && cd build
-        cmake ..
-        make -j4
   release:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
         tag: ${{steps.version_bump.outputs.tag}}
         url: ${{steps.create_release.outputs.upload_url}}
-    needs: build
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
     - name: Version
       id: version_bump
-      uses: anothrNick/github-tag-action@1.38.0
+      uses: anothrNick/github-tag-action@v1
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         DEFAULT_BUMP: "patch"
@@ -55,67 +31,103 @@ jobs:
         release_name: coreminer ${{steps.version_bump.outputs.tag}}
         draft: false
         prerelease: false
-  pack:
+  build:
+    if: github.ref != 'refs/heads/master'
     strategy:
       matrix:
-        platform: [
+        config: [
           {os: ubuntu-latest, path: linux-x86_64},
           {os: raspbian-private, path: linux-arm64},
         ]
-    runs-on: ${{matrix.platform.os}}
-    needs: release
+    runs-on: ${{matrix.config.os}}
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
         submodules: recursive
         token: ${{secrets.GITHUB_TOKEN}}
-    - name: Cache hunter
-      uses: actions/cache@v3
+    - name: Cache
+      uses: actions/cache@v4
       with:
         path: ~/.hunter
-        key: ${{ matrix.platform.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        key: ${{ matrix.config.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
         restore-keys: |
-          ${{ matrix.platform.os }}-hunter-cache-
+          ${{ matrix.config.os }}-hunter-cache-
+    - name: Build
+      run: |
+        mkdir build && cd build
+        cmake .. -DPROJECT_VERSION=0.0.0
+        make -j$(nproc)
+  artifacts:
+    strategy:
+      matrix:
+        config: [
+          {os: ubuntu-latest, path: linux-x86_64},
+          {os: raspbian-private, path: linux-arm64},
+        ]
+    runs-on: ${{matrix.config.os}}
+    needs: release
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{secrets.GITHUB_TOKEN}}
+    - name: Cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.hunter
+        key: ${{ matrix.config.os }}-hunter-cache-${{ hashFiles('**/cmake/Hunter/config.cmake') }}
+        restore-keys: |
+          ${{ matrix.config.os }}-hunter-cache-
     - name: Build
       run: |
         mkdir build && cd build
         cmake .. -DPROJECT_VERSION=${{needs.release.outputs.tag}}
-        make -j4
-    - name: Prepare
+        make -j$(nproc)
+    - name: Zip
       run: |
         mkdir coreapp
         cp build/coreminer/coreminer coreapp
         cp mine.sh coreapp
-    - name: Zip
-      run: tar -czvf ${{ matrix.platform.path }}.tar.gz coreapp/*
-    - name: Upload release assets
+        tar -czvf ${{ matrix.config.path }}.tar.gz coreapp/*
+    - name: Upload
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.url }}
-        asset_path: ./${{ matrix.platform.path }}.tar.gz
-        asset_name: coreminer-${{ matrix.platform.path }}.tar.gz
+        asset_path: ./${{ matrix.config.path }}.tar.gz
+        asset_name: coreminer-${{ matrix.config.path }}.tar.gz
         asset_content_type: application/gzip
   docker:
-    needs: [release, pack]
-    strategy:
-      matrix:
-        platform: [
-          {os: ubuntu-latest, path: linux-x86_64},
-          {os: raspbian-private, path: linux-arm64},
-        ]
-    runs-on: ${{matrix.platform.os}}
+    runs-on: ubuntu-latest
+    needs: release
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        token: ${{secrets.GITHUB_TOKEN}}
-    - name: Docker
-      run: |
-        docker login ghcr.io -u ${{github.actor}} -p ${{secrets.GITHUB_TOKEN}}
-        docker build --network=host . --build-arg version=${{needs.release.outputs.tag}} -t ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}} -t ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
-        docker push ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}-${{matrix.platform.path}}
-        docker push ghcr.io/catchthatrabbit/coreminer:${{matrix.platform.path}}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{secrets.GITHUB_TOKEN}}
+      - name: Setup
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build
+        run: |
+          docker buildx create --use
+          docker buildx build \
+            --network host \
+            --build-arg version=${{needs.release.outputs.tag}} \
+            --platform linux/amd64,linux/arm64 \
+            --tag ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}} \
+            --tag ghcr.io/catchthatrabbit/coreminer:latest \
+            --push .
+      - name: Verify
+        run: |
+          docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:${{needs.release.outputs.tag}}
+          docker buildx imagetools inspect ghcr.io/catchthatrabbit/coreminer:latest

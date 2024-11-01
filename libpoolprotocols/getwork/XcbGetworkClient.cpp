@@ -25,7 +25,7 @@ XcbGetworkClient::XcbGetworkClient(int worktimeout, unsigned farmRecheckPeriod)
     Json::Value jGetWork;
     jGetWork["id"] = unsigned(1);
     jGetWork["jsonrpc"] = "2.0";
-    jGetWork["method"] = "eth_getWork";
+    jGetWork["method"] = "xcb_getWork";
     jGetWork["params"] = Json::Value(Json::arrayValue);
     m_jsonGetWork = std::string(Json::writeString(m_jSwBuilder, jGetWork));
 }
@@ -391,7 +391,7 @@ void XcbGetworkClient::processResponse(Json::Value& JRes)
 
     // We have only theese possible ids
     // 0 or 1 as job notification
-    // 9 as response for eth_submitHashrate
+    // 9 as response for xcb_submitHashrate
     // 40+ for responses to mining submissions
     if (_id == 0 || _id == 1)
     {
@@ -414,7 +414,7 @@ void XcbGetworkClient::processResponse(Json::Value& JRes)
         {
             if (!JRes.isMember("result"))
             {
-                cwarn << "Missing data for eth_getWork request from " << m_conn->Host() << ":"
+                cwarn << "Missing data for xcb_getWork request from " << m_conn->Host() << ":"
                       << toString(m_conn->Port());
             }
             else
@@ -529,7 +529,7 @@ void XcbGetworkClient::submitHashrate(uint64_t const& rate, string const& id)
         Json::Value jReq;
         jReq["id"] = unsigned(9);
         jReq["jsonrpc"] = "2.0";
-        jReq["method"] = "eth_submitHashrate";
+        jReq["method"] = "xcb_submitHashrate";
         jReq["params"] = Json::Value(Json::arrayValue);
         jReq["params"].append(toHex(rate, HexPrefix::Add));  // Already expressed as hex
         jReq["params"].append(id);                           // Already prefixed by 0x
@@ -550,7 +550,7 @@ void XcbGetworkClient::submitSolution(const Solution& solution)
         jReq["id"] = id;
         jReq["jsonrpc"] = "2.0";
         m_solution_submitted_max_id = max(m_solution_submitted_max_id, id);
-        jReq["method"] = "eth_submitWork";
+        jReq["method"] = "xcb_submitWork";
         jReq["params"] = Json::Value(Json::arrayValue);
         jReq["params"].append("0x" + nonceHex);
         jReq["params"].append("0x" + solution.work.header.hex());

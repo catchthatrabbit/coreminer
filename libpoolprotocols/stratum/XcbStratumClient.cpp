@@ -615,7 +615,7 @@ void XcbStratumClient::connect_handler(const boost::system::error_code& ec)
 
     case XcbStratumClient::ETHPROXY:
 
-        jReq["method"] = "eth_submitLogin";
+        jReq["method"] = "xcb_submitLogin";
         if (!m_conn->Workername().empty())
             jReq["worker"] = m_conn->Workername();
         jReq["params"].append(m_conn->User() + m_conn->Path());
@@ -939,7 +939,7 @@ void XcbStratumClient::processResponse(Json::Value& responseObject)
 
                     // Request initial work
                     jReq["id"] = unsigned(5);
-                    jReq["method"] = "eth_getWork";
+                    jReq["method"] = "xcb_getWork";
                     jReq["params"] = Json::Value(Json::arrayValue);
                 }
                 else
@@ -1565,7 +1565,7 @@ void XcbStratumClient::submitHashrate(uint64_t const& rate, string const& id)
         jReq["jsonrpc"] = "2.0";
         if (!m_conn->Workername().empty())
             jReq["worker"] = m_conn->Workername();
-        jReq["method"] = "eth_submitHashrate";
+        jReq["method"] = "xcb_submitHashrate";
         jReq["params"].append(toHex(rate, HexPrefix::Add, 32));  // Already expressed as hex
         jReq["params"].append(id);                               // Already prefixed by 0x
     }
@@ -1623,7 +1623,7 @@ void XcbStratumClient::submitSolution(const Solution& solution)
 
     case XcbStratumClient::ETHPROXY:
 
-        jReq["method"] = "eth_submitWork";
+        jReq["method"] = "xcb_submitWork";
         jReq["params"].append(toHex(solution.nonce, HexPrefix::Add));
         jReq["params"].append(solution.work.header.hex(HexPrefix::Add));
         jReq["params"].append(solution.mixHash.hex(HexPrefix::Add));

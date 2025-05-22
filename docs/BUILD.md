@@ -1,17 +1,18 @@
-# Building from source
+# Building CoreMiner from Source
 
 ## Table of Contents
 
-* [Requirements](#requirements)
-    * [Common](#common)
-    * [Linux](#linux)
-    * [macOS](#macos)
-    * [Windows](#windows)
-* [CMake configuration options](#cmake-configuration-options)
-* [Disable Hunter](#disable-hunter)
-* [Instructions](#instructions)
-    * [Windows-specific script](#windows-specific-script)
-
+- [Building CoreMiner from Source](#building-coreminer-from-source)
+  - [Table of Contents](#table-of-contents)
+  - [Requirements](#requirements)
+    - [Common](#common)
+    - [Linux](#linux)
+    - [macOS](#macos)
+    - [Windows](#windows)
+  - [Instructions](#instructions)
+    - [Windows-specific Script](#windows-specific-script)
+  - [CMake Configuration Options](#cmake-configuration-options)
+  - [Disable Hunter](#disable-hunter)
 
 ## Requirements
 
@@ -21,16 +22,16 @@ This project uses [CMake] and [Hunter] package manager.
 
 1. [CMake] >= 3.5
 2. [Git](https://git-scm.com/downloads)
-3. [Perl](https://www.perl.org/get.html), needed to build OpenSSL
+3. [Perl](https://www.perl.org/get.html) (required for OpenSSL build)
 
 ### Linux
 
 1. GCC version >= 4.8
-2. DBUS development libs if building with `-DETHDBUS`. E.g. on Ubuntu run:
+2. DBUS development libraries (if building with `-DETHDBUS`). For Ubuntu:
 
-```shell
-sudo apt install libdbus-1-dev
-```
+   ```bash
+   sudo apt install libdbus-1-dev
+   ```
 
 ### macOS
 
@@ -38,73 +39,76 @@ sudo apt install libdbus-1-dev
 
 ### Windows
 
-1. [Visual Studio 2017](https://www.visualstudio.com/downloads/); Community Edition works fine. **Make sure you install MSVC 2015 toolkit (v140).**
+1. [Visual Studio 2017](https://www.visualstudio.com/downloads/) (Community Edition is sufficient)
+   > **Note**: Make sure you install MSVC 2015 toolkit (v140).
 
 ## Instructions
 
-1. Make sure git submodules are up to date:
+1. Update git submodules:
 
-    ```shell
-    git submodule update --init --recursive
-    ```
+   ```bash
+   git submodule update --init --recursive
+   ```
 
 2. Create a build directory:
 
-    ```shell
-    mkdir build
-    cd build
-    ```
+   ```bash
+   mkdir build
+   cd build
+   ```
 
-3. Configure the project with CMake. Check out the additional [configuration options](#cmake-configuration-options).
+3. Configure the project with CMake. See [configuration options](#cmake-configuration-options) for additional settings:
 
-    ```shell
-    cmake ..
-    ```
+   ```bash
+   cmake ..
+   ```
 
-    ```shell
-    cmake .. -G "Visual Studio 15 2017 Win64"
-    # or this if you have build errors
-    cmake .. -G "Visual Studio 15 2017 Win64" -T v140
-    ```
+   For Windows:
 
-4. Build the project using [CMake Build Tool Mode]. This is a portable variant of `make`.
+   ```bash
+   cmake .. -G "Visual Studio 15 2017 Win64"
+   # If you encounter build errors, try:
+   cmake .. -G "Visual Studio 15 2017 Win64" -T v140
+   ```
 
-    ```shell
-    cmake --build .
-    ```
+4. Build the project using CMake Build Tool Mode:
 
-    Note: On Windows, it is possible to have compiler issues if you don't specify the build config. In that case use:
+   ```bash
+   cmake --build .
+   ```
 
-    ```shell
-    cmake --build . --config Release
-    ```
+   > **Note**: On Windows, specify the build config if you encounter compiler issues:
+
+   ```bash
+   cmake --build . --config Release
+   ```
 
 5. _(Optional, Linux only)_ Install the built executable:
 
-    ```shell
-    sudo make install
-    ```
+   ```bash
+   sudo make install
+   ```
 
-### Windows-specific script
+### Windows-specific Script
 
-Complete sample Windows batch file - **adapt it to your system**. Assumes that:
+Here's a complete Windows batch file example. **Adapt it to your system**. The script assumes:
 
-* it's placed one folder up from the coreminer source folder
-* you have CMake installed
-* you have Perl installed
+- It's placed one folder up from the CoreMiner source folder
+- CMake is installed
+- Perl is installed
 
-```bat
+```batch
 @echo off
 setlocal
 
-rem add MSVC in PATH
+rem Add MSVC to PATH
 call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\Common7\Tools\VsMSBuildCmd.bat"
 
-rem add Perl in PATH; it's needed for OpenSSL build
+rem Add Perl to PATH (needed for OpenSSL build)
 set "PERL_PATH=C:\Perl\perl\bin"
 set "PATH=%PERL_PATH%;%PATH%"
 
-rem switch to coreminer's source folder
+rem Switch to CoreMiner's source folder
 cd "%~dp0\coreminer\"
 
 if not exist "build\" mkdir "build\"
@@ -116,24 +120,16 @@ endlocal
 pause
 ```
 
-## CMake configuration options
+## CMake Configuration Options
 
-Pass these options to CMake configuration command, e.g.
+Add these options to your CMake configuration command:
 
-```shell
-cmake ..
-```
-
-* `-DAPICORE=ON` - enable API Server, `ON` by default.
-* `-DETHDBUS=ON` - enable D-Bus support, `OFF` by default.
+- `-DAPICORE=ON` - Enable API Server (default: ON)
+- `-DETHDBUS=ON` - Enable D-Bus support (default: OFF)
 
 ## Disable Hunter
 
-If you want to install dependencies yourself or use system package manager you can disable Hunter by adding
-[`-DHUNTER_ENABLED=OFF`](https://docs.hunter.sh/en/latest/reference/user-variables.html#hunter-enabled)
-to the configuration options.
-
+To install dependencies manually or use your system's package manager, disable Hunter by adding `-DHUNTER_ENABLED=OFF` to your CMake configuration options.
 
 [CMake]: https://cmake.org/
-[CMake Build Tool Mode]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#build-tool-mode
 [Hunter]: https://docs.hunter.sh/

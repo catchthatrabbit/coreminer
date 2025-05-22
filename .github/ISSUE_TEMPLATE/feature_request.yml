@@ -1,5 +1,5 @@
-name: Feature request
-description: Suggest an idea for this project.
+name: Feature Request
+description: Suggest a new feature or enhancement for CoreMiner.
 title: "[FEATURE] "
 labels:
   - feature
@@ -9,38 +9,38 @@ body:
   - type: markdown
     attributes:
       value: |
-        Suggest an idea for this project and developers will consider the integration.
+        Suggest a new feature or enhancement for CoreMiner. Our development team will review your proposal.
 
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: Is your feature request related to a problem? Please describe.
+      label: Problem Statement
+      description: What problem are you trying to solve?
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Solution
-      description: Describe the solution you'd like.
+      label: Proposed Solution
+      description: Describe your proposed solution
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives
-      description: Describe alternatives you've considered.
+      label: Alternative Solutions
+      description: What alternatives have you considered?
 
   - type: textarea
     id: implementation
     attributes:
-      label: Implementation
-      description: Describe implementation with example of the code.
+      label: Implementation Details
+      description: Provide implementation details or code examples
 
   - type: textarea
     id: additional
     attributes:
-      label: Additional context
-      description: Please, place additional content or screenshots.
+      label: Additional Information
+      description: Add any relevant information or screenshots

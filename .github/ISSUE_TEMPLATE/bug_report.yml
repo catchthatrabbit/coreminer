@@ -1,5 +1,5 @@
 name: Report Bug
-description: Create a bug report.
+description: Submit a bug report to help improve CoreMiner.
 title: "[BUG] "
 labels:
   - bug
@@ -9,18 +9,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please, provide as much details as possible to make proper evaluation and in the end resolve the bug report faster.
+        Please provide as many details as possible to help us evaluate and resolve the bug report efficiently.
 
   - type: markdown
     attributes:
       value: |
-        Hardware details.
+        Hardware Information
 
   - type: input
     id: device
     attributes:
       label: Device
-      description: Used device.
+      description: Device being used
       placeholder: Device name
 
   - type: dropdown
@@ -40,27 +40,27 @@ body:
   - type: input
     id: cpubrand
     attributes:
-      label: CPU brand
-      description: Brand of used CPU.
+      label: CPU Brand
+      description: CPU brand being used
       placeholder: CPU brand
 
   - type: input
     id: cpumodel
     attributes:
-      label: CPU model
-      description: Model of used CPU.
+      label: CPU Model
+      description: CPU model being used
       placeholder: CPU model
 
   - type: markdown
     attributes:
       value: |
-        Software specific details.
+        Software Information
 
   - type: input
     id: os
     attributes:
-      label: OS and version
-      description: Name and version of OS used.
+      label: OS and Version
+      description: Operating system and version being used
       placeholder: OS
     validations:
       required: true
@@ -68,8 +68,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Software version
-      description: Version of software used.
+      label: Software Version
+      description: Version of CoreMiner being used
       placeholder: Version
     validations:
       required: true
@@ -77,8 +77,8 @@ body:
   - type: textarea
     id: bug
     attributes:
-      label: Bug
-      description: Describe the Bug.
+      label: Bug Description
+      description: Describe the bug in detail
       placeholder: Bug description
     validations:
       required: true
@@ -86,8 +86,8 @@ body:
   - type: textarea
     id: reproduce
     attributes:
-      label: Reproduce Bug
-      description: Steps to reproduce the behavior.
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
       placeholder: 1. Step 1
     validations:
       required: true
@@ -95,8 +95,8 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
-      description: Describe the result you are expecting.
+      label: Expected Behavior
+      description: Describe the expected result
       placeholder: Result
     validations:
       required: true
@@ -104,5 +104,5 @@ body:
   - type: textarea
     id: additional
     attributes:
-      label: Additional context
-      description: Please, place additional content or screenshots.
+      label: Additional Context
+      description: Add any additional information or screenshots

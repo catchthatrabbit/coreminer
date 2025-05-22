@@ -1,24 +1,29 @@
-# Pool Examples for Core
+# CoreMiner Stratum Protocol
 
-Pool connection definition is issued via `-P` argument which has this syntax:
+## Connection Format
 
-```
+Pool connections are defined using the `-P` argument with the following syntax:
+
+```bash
 -P scheme://user[.workername][:password]@hostname:port[/...]
 ```
-__values in square brackets are optional__
 
-where `scheme` can be any of:
+> **Note**: Values in square brackets are optional.
 
-* `http` for getwork mode
-* `stratum+tcp` for plain stratum mode
-* `stratum1+tcp` for plain stratum core-proxy compatible mode
-* `stratum2+tcp` for plain stratum NiceHash compatible mode
+Supported schemes:
 
-## A note about this form of notation
-This notation is called URI notation and gives us great flexibility allowing Coreminer to specify all needed arguments per single connection (other miners offer single dedicated CLI arguments which are valid for all connections).
-An URI is formed like this
+- `http` - getwork mode
+- `stratum+tcp` - plain stratum mode
+- `stratum1+tcp` - plain stratum core-proxy compatible mode
+- `stratum2+tcp` - plain stratum NiceHash compatible mode
 
-```
+## URI Notation
+
+This notation provides flexibility by allowing CoreMiner to specify all needed arguments per connection. Other miners typically use dedicated CLI arguments that apply to all connections.
+
+A URI is structured as follows:
+
+```txt
                                    Authority
             +-----------------------------------------------------------------------------------------+
   stratum://cb57bbbb54cdf60fa666fd741be78f794d4608d67109.worker-01:password@eu.catchthatrabbit.com:8008
@@ -28,71 +33,88 @@ An URI is formed like this
       |                         |                                  + -------------------------------- > Host
       |                         + ------------------------------------------------------------------- > User Info
       + --------------------------------------------------------------------------------------------- > Scheme
-
 ```
 
-Optionally you can append to the above notation anything which might be useful in the form of a path.
-Example
+You can optionally append additional information as a path:
 
-```
+```txt
 stratum://cb57bbbb54cdf60fa666fd741be78f794d4608d67109.worker-01:password@eu.catchthatrabbit.com:8008/something/else
                                                                                                      +--------------+
                                                                                                        |
                                                                                   Path --------------- +
 ```
 
-**Anything you put in the `Path` part must be Url Encoded thus, for example, `@` must be written as `%40`**
+> **Note**: Any characters in the Path section must be URL encoded. For example, `@` must be written as `%40`.
 
-As you may have noticed due to compatibility with pools we need to know exactly which are the delimiters for the account, the workername (if any) and the password (if any) which are respectively a dot `.` and a column `:`.
-Should your values contain any of the above mentioned chars or any other char which may impair the proper parsing of the URI you have two options:
-- either enclose the string in backticks (ASCII 96)
-- or URL encode the impairing chars
+## Special Characters
 
-Say you need to provide the pool with an account name which contains a dot. At your discretion you may either write
-```
+Due to pool compatibility, we need specific delimiters:
+
+- `.` (dot) separates the account from the workername
+- `:` (colon) separates the workername from the password
+
+If your values contain these characters or others that might affect parsing, you have two options:
+
+1. Enclose the string in backticks (ASCII 96)
+2. URL encode the problematic characters
+
+Example with an account name containing a dot:
+
+```bash
+# Using backticks
 -P stratum://`account.1234`.worker-01:password@eu.catchthatrabbit.com:8008
-```  
-or
-```
+
+# Using URL encoding
 -P stratum://account%2e1234.worker-01:password@eu.catchthatrabbit.com:8008
-```  
-The above samples produce the very same result.
-
-**Backticks on *nix**. The backtick enclosure has a special meaning of execution thus you may need to further escape the sequence as
 ```
+
+> **Note**: On Unix-like systems, backticks have special meaning for command execution. You may need to escape them:
+
+```bash
 -P stratum://\`account.1234\`.worker-01:password@eu.catchthatrabbit.com:8008
-```  
-**`%` on Windows**. The percent symbol `%` has a special meaning in Windows batch files thus you may need to further escape it by doubling. Following example shows `%2e` needs to be replaced as `%%2e`
 ```
+
+> **Note**: On Windows, the `%` symbol has special meaning in batch files. You may need to double it:
+
+```batch
 -P stratum://account%%2e1234.worker-01:password@eu.catchthatrabbit.com:8008
-```  
+```
 
-## Secure socket communications for stratum only
+## Secure Socket Communications
 
-Coreminer supports secure socket communications (where pool implements and offers it) to avoid the risk of a [man-in-the-middle attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)
-To enable it simply replace tcp with either:
+CoreMiner supports secure socket communications to prevent [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack). To enable it, replace `tcp` with:
 
-* `tls` to enable secure socket communication
-* `ssl` or `tls12` to enable secure socket communication **allowing only TLS 1.2** encryption
+- `tls` - Enable secure socket communication
+- `ssl` or `tls12` - Enable secure socket communication with TLS 1.2 only
 
-thus your connection scheme changes to `-P stratum+tls://[...]` or `-P stratum+tls12://[...]`. Same applies for `stratum1` and `stratum2`.
+Example:
 
-## Special characters in variables
+```bash
+-P stratum+tls://[...]
+# or
+-P stratum+tls12://[...]
+```
 
-You can use the %xx (xx=hexvalue of character) to pass special values.
-Some examples:
+This applies to all stratum variants (`stratum1` and `stratum2`).
+
+## URL Encoding Reference
+
+Common special characters and their URL encodings:
 
 | Code | Character |
-| :---: |  :---: |
-|%25 | % |
-|%26 | & |
-|%2e | . |
-|%2f | / |
-|%3a | : |
-|%3f | ? |
-|%40 | @ |
+|:----:|:---------:|
+| %25  | %         |
+| %26  | &         |
+| %2e  | .         |
+| %2f  | /         |
+| %3a  | :         |
+| %3f  | ?         |
+| %40  | @         |
 
-## Secure connections
+## Automatic Stratum Detection
 
-Stratum autodetection has been introduced to mitigate user's duty to guess/find which stratum flavour to apply (stratum or stratum1 or stratum2).
-If you want to let Coreminer do the tests for you simply enter scheme as `stratum://` (note `+tcp` is missing) or `stratums://` for secure socket or `stratumss://` for secure socket **allowing only TLS 1.2** encryption.
+CoreMiner includes automatic stratum detection to simplify connection setup. Instead of guessing the correct stratum variant, you can use:
+
+- `stratum://` - For automatic detection of plain stratum
+- `stratums://` - For automatic detection of secure stratum
+- `stratumss://` - For automatic detection of TLS 1.2 secure stratum

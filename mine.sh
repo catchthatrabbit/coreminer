@@ -9,29 +9,83 @@ units_available()
 	fi
 }
 
+request_worker_name() {
+	echo "$(tput setaf 3)●$(tput sgr 0) Enter worker name. Choose format:"
+	echo "1) Plain name (alphanumeric and underscores/hyphens)"
+	echo "2) Fediverse user (e.g., _username_instance_tld-machineid)"
+	echo "3) Random (e.g., worker-34874)"
+	read -p "$(tput setaf 3)➤$(tput sgr 0) Select format (1, 2, or 3): " choice
+
+	case $choice in
+		1)
+			while true; do
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter plain name: " worker
+				if [[ $worker =~ ^[a-zA-Z0-9_-]+$ ]]; then
+					break
+				else
+					echo "$(tput setaf 1)●$(tput sgr 0) Invalid format. Please use alphanumeric characters, underscores, or hyphens."
+				fi
+			done
+			;;
+		2)
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter Fediverse username (alphanumeric): " username
+			while ! [[ $username =~ ^[a-zA-Z0-9]+$ ]]; do
+				echo "$(tput setaf 1)●$(tput sgr 0) Invalid username. Must be alphanumeric."
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter Fediverse username (alphanumeric): " username
+			done
+			username=$(echo "$username" | awk '{print tolower($0)}') # Convert to lowercase
+
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter Fediverse domain (instance.tld): " domain
+			# Transform domain to lowercase and replace dots with underscores
+			formatted_domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]' | tr '.' '_')
+
+			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter optional Machine ID (alphanumeric, can be skipped): " id
+			while ! [[ $id =~ ^[a-zA-Z0-9]*$ ]]; do
+				echo "$(tput setaf 1)●$(tput sgr 0) Invalid Machine ID. Must be alphanumeric."
+				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter optional Machine ID (alphanumeric, can be skipped): " id
+			done
+
+			worker="_${username}_${formatted_domain}"
+			if [[ -n $id ]]; then
+				worker+="-${id}"
+			fi
+			;;
+		3)
+			random_number=$(shuf -i 10000-99999 -n 1) # Generate a random number
+			worker="worker-${random_number}"
+			;;
+		*)
+			echo "$(tput setaf 1)●$(tput sgr 0) Invalid choice. Please try again."
+			request_worker_name
+			;;
+	esac
+	echo "$(tput setaf 2)●$(tput sgr 0) Worker name set to: $worker"
+}
+
 add_pool()
 {
 	if [[ "$1" -gt "1" ]]; then
 		echo
-		echo "$(tput setaf 3)●$(tput sgr 0) Please, select the additional mining pool."
+		echo "$(tput setaf 3)●$(tput sgr 0) Please select an additional mining pool."
 		PS3="➤ Additional Pool: "
 	else
-		echo "$(tput setaf 3)●$(tput sgr 0) Please, select the mining pool."
+		echo "$(tput setaf 3)●$(tput sgr 0) Please select a mining pool."
 		PS3="$(tput setaf 3)➤$(tput sgr 0) Pool: "
 	fi
 
 	units=`units_available`
-	options=("CTR EU" "CTR EU Backup" "CTR AS" "CTR AS Backup" "CTR US" "CTR US Backup" "Other" "Exit")
+	options=("DACH Pool 🇩🇪🇦🇹🇨🇭" "Nordic Pool 🇫🇮🇳🇴🇸🇪" "ASEAN Pool 🇸🇬🇹🇭🇵🇭" "Far-East Pool 🇭🇰🇨🇳🇯🇵" "American Pool 🇺🇸🇲🇽🇧🇷" "Other 🌐" "Exit ❌")
+	IFS=$'\n'
 	select opt in "${options[@]}"
 	do
 		case "$REPLY" in
 			1)
 				pool_heading $opt
-				server[$1]="eu.catchthatrabbit.com"
+				server[$1]="de.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -39,11 +93,11 @@ add_pool()
 				;;
 			2)
 			pool_heading $opt
-			server[$1]="eu1.catchthatrabbit.com"
+			server[$1]="fi.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -51,11 +105,11 @@ add_pool()
 				;;
 			3)
 			pool_heading $opt
-			server[$1]="as.catchthatrabbit.com"
+			server[$1]="sg.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -63,11 +117,11 @@ add_pool()
 				;;
 			4)
 			pool_heading $opt
-			server[$1]="as1.catchthatrabbit.com"
+			server[$1]="hk.catchthatrabbit.com"
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -79,7 +133,7 @@ add_pool()
 				port[$1]=8008
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
@@ -87,29 +141,17 @@ add_pool()
 				;;
 			6)
 			pool_heading $opt
-			server[$1]="us1.catchthatrabbit.com"
-				port[$1]=8008
-				if [[ "$1" -lt "2" ]]; then
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
-					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
-					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
-				fi
-				break
-				;;
-			7)
-			pool_heading $opt
 			read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server address: " server[$1]
 				read -p "$(tput setaf 3)➤$(tput sgr 0) Enter server port: " port[$1]
 				if [[ "$1" -lt "2" ]]; then
 					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter wallet address: " wallet
-					read -p "$(tput setaf 3)➤$(tput sgr 0) Enter worker name: " worker
+					request_worker_name
 					printf "$(tput setaf 3)●$(tput sgr 0) Available processing units: %s\n" $units
 					read -p "$(tput setaf 3)➤$(tput sgr 0) How many units to use? [Enter for all] " threads
 				fi
 				break
 				;;
-			8) clear; exit 0;;
+			7) clear; exit 0;;
 			*) echo "$(tput setaf 1)●$(tput sgr 0) Invalid option."; continue;;
 		esac
 	done
@@ -119,7 +161,7 @@ pool_heading()
 {
 	echo
 	echo "╒════════════════════════════════════"
-	echo "│ Pool $1"
+	echo "│ $1"
 	echo "╘════════════════════════════════════"
 }
 
@@ -157,7 +199,7 @@ start_mining()
 	fi
 
 	if [ ! -f "coreminer" ]; then
-		echo "$(tput setaf 1)●$(tput sgr 0) Miner not found!"
+		echo "$(tput setaf 1)●$(tput sgr 0) Miner executable not found!"
 		exit 2
 	fi
 
@@ -195,11 +237,11 @@ validate_wallet()
 		done
 		OPERAND=`echo $SUM``echo $CHECKSUM`
 		if [[ `echo "$OPERAND % 97" | $BC` -ne 1 ]]; then
-			echo "$(tput setaf 1)●$(tput sgr 0) Invalid wallet!"
+			echo "$(tput setaf 1)●$(tput sgr 0) Invalid wallet address!"
 			exit 1
 		fi
 	else
-		echo "$(tput setaf 3)●$(tput sgr 0) Not able to validate wallet! (Install 'bc' if needed.)"
+		echo "$(tput setaf 3)●$(tput sgr 0) Unable to validate wallet. Please install 'bc' if needed."
 	fi
 }
 
@@ -215,10 +257,12 @@ compose_stratum()
 
 export_config()
 {
-	> $1
-	for setting in "${@:2}"
+	filename=$1
+	shift  # Remove the first argument (filename) from the list
+	> "$filename"
+	for setting in "$@"
 	do
-		echo $setting >> $1
+		echo "$setting" >> "$filename"
 	done
 }
 
@@ -288,7 +332,7 @@ autostart_service()
 	echo "$(tput setaf 2)●$(tput sgr 0) Creating autostart service."
 	> /etc/systemd/system/coreminer.service
 	echo "[Unit]" >> /etc/systemd/system/coreminer.service
-	echo "Description=CoreVerificator" >> /etc/systemd/system/coreminer.service
+	echo "Description=CoreMiner Service" >> /etc/systemd/system/coreminer.service
 	echo "After=network.target" >> /etc/systemd/system/coreminer.service
 	echo "StartLimitIntervalSec=0" >> /etc/systemd/system/coreminer.service
 	echo "" >> /etc/systemd/system/coreminer.service
@@ -305,9 +349,9 @@ autostart_service()
 	systemctl daemon-reload
 	systemctl enable coreminer.service
 	echo "$(tput setaf 2)●$(tput sgr 0) Autostart service created."
-	echo "$(tput setaf 2)●$(tput sgr 0) Vacuuming journal."
+	echo "$(tput setaf 2)●$(tput sgr 0) Configuring journal rotation."
 	journalctl --rotate && journalctl --vacuum-time=1d
-	echo "$(tput setaf 2)●$(tput sgr 0) Starting autostart service and script."
+	echo "$(tput setaf 2)●$(tput sgr 0) Starting autostart service."
 	systemctl start coreminer.service
 }
 
@@ -331,7 +375,7 @@ echo
 
 CONFIG=`extdrive_check`
 if [ -f "$CONFIG" ]; then
-	echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' exists."
+	echo "$(tput setaf 2)●$(tput sgr 0) Mine settings file '$CONFIG' found."
 	echo "$(tput setaf 2)●$(tput sgr 0) Importing settings."
 	import_config $CONFIG
 	if [ "$update" = true ]; then
@@ -339,7 +383,7 @@ if [ -f "$CONFIG" ]; then
 	fi
 	ICANWALLET=${wallet//[[:blank:]]/}
 	validate_wallet $ICANWALLET
-	echo "$(tput setaf 2)●$(tput sgr 0) Wallet validated."
+	echo "$(tput setaf 2)●$(tput sgr 0) Wallet address validated."
 	STRATUM=""
 	echo "$(tput setaf 2)●$(tput sgr 0) Configuring stratum server."
 	for i in "${!server[@]}"
@@ -347,15 +391,15 @@ if [ -f "$CONFIG" ]; then
 		STRATUM+=`compose_stratum "$ICANWALLET" "${server[$i]}" "${port[$i]}" "$worker"`
 		STRATUM+=" "
 	done
-	echo "$(tput setaf 2)●$(tput sgr 0) Starting mining command."
+	echo "$(tput setaf 2)●$(tput sgr 0) Starting mining process."
 	start_mining "$threads" $STRATUM
 else
-	echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' doesn't exist."
-	echo "$(tput setaf 2)●$(tput sgr 0) Proceeding with setup."
+	echo "$(tput setaf 3)●$(tput sgr 0) Mine settings file '$CONFIG' not found."
+	echo "$(tput setaf 2)●$(tput sgr 0) Starting setup process."
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Check for the update? [yes/no] " upd
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Check for the update? [Yes/No] " upd
 		case $upd in
 			[yY][eE][sS]|[yY])
 				update_app
@@ -366,7 +410,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -380,7 +424,7 @@ else
 	(( LOOP++ ))
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Do you wish to add additional pool? [yes/no] " back
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Do you wish to add additional pool? [Yes/No] " back
 		case $back in
 			[yY][eE][sS]|[yY])
 				add_pool $LOOP
@@ -390,7 +434,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -398,21 +442,26 @@ else
 	echo
 	echo "$(tput setaf 2)●$(tput sgr 0) Saving the settings."
 
-	EXPORTDATA=""
+	# Build settings array
+	settings=()
 	if [[ "$threads" -gt "0" ]]; then
-		EXPORTDATA+="$CONFIG wallet=${ICANWALLET} worker=${worker} threads=${threads}"
+		settings+=("wallet=${ICANWALLET}")
+		settings+=("worker=${worker}")
+		settings+=("threads=${threads}")
 	else
-		EXPORTDATA+="$CONFIG wallet=${ICANWALLET} worker=${worker}"
+		settings+=("wallet=${ICANWALLET}")
+		settings+=("worker=${worker}")
 	fi
 	for ((i = 1; i < $LOOP; i++)); do
-		EXPORTDATA+=" server[$i]=${server[$i]} port[$i]=${port[$i]}"
+		settings+=("server[$i]=${server[$i]}")
+		settings+=("port[$i]=${port[$i]}")
 	done
-	export_config $EXPORTDATA
+	export_config "$CONFIG" "${settings[@]}"
 
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Add the autostart service? [yes/no] " autostart
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Add the autostart service? [Yes/No] " autostart
 		case $autostart in
 			[yY][eE][sS]|[yY])
 				autostart_service
@@ -423,7 +472,7 @@ else
 				break
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done
@@ -431,7 +480,7 @@ else
 	echo
 	while true
 	do
-		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Start mining now? [yes/no] " mine
+		read -r -p "$(tput setaf 3)➤$(tput sgr 0) Start mining now? [Yes/No] " mine
 		case $mine in
 			[yY][eE][sS]|[yY])
 				STRATUM=""
@@ -446,7 +495,7 @@ else
 				exit 0
 					;;
 			*)
-				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [yes,no]"
+				echo "$(tput setaf 1)➤$(tput sgr 0) Invalid input. [Yes/No]"
 					;;
 		esac
 	done

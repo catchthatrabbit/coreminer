@@ -1,61 +1,90 @@
-# Coreminer Autostart
+# CoreMiner Autostart
 
-You can autostart the miner on Linux distribution using unit `service` under the [Systemd](https://en.wikipedia.org/wiki/Systemd) software suite.
+You can configure CoreMiner to start automatically on Linux distributions using the `systemd` service manager.
 
 ## Installation
 
-Please, follow few steps, which can differ depends on your OS used.
+Follow these steps to set up automatic startup. The steps may vary depending on your operating system.
 
-You can choose one of the installation types:
-- [Coreminer Autostart](#coreminer-autostart)
+You can choose one of the following installation methods:
+
+- [CoreMiner Autostart](#coreminer-autostart)
   - [Installation](#installation)
   - [Manual Installation](#manual-installation)
-    - [Optional steps](#optional-steps)
+    - [Optional Steps](#optional-steps)
   - [Automatic Installation](#automatic-installation)
   - [Troubleshooting](#troubleshooting)
 
 ## Manual Installation
 
-1. Download latest release of CoreMiner and initiate the first setup using `mine.sh` script.
-1. Please, copy the contents of file  `coreverif.service`. Replace `WorkingDirectory` with your miner location and `ExecStart` with the `mine.sh` script location. (Example is showing fresh Kali linux.) To print your current directory, you can use `pwd` command.
+1. Download the latest release of CoreMiner and run the initial setup using the `mine.sh` script.
+2. Create a systemd service file with the following content. Replace `WorkingDirectory` with your miner location and `ExecStart` with the `mine.sh` script location. (The example shows a fresh Kali Linux installation.) Use the `pwd` command to print your current directory.
 
-Contents of file `coreverif.service`:
+   ```ini
+   [Unit]
+   Description=CoreMiner Service
+   After=network.target
+   StartLimitIntervalSec=0
 
-```bash
-[Unit]
-Description=CoreVerificator
-After=network.target
-StartLimitIntervalSec=0
+   [Service]
+   Type=simple
+   WorkingDirectory=$(pwd)
+   ExecStart=/bin/bash $(pwd)/mine.sh
+   Restart=always
+   RestartSec=3
+   TimeoutStartSec=0
 
-[Service]
-Type=simple
-WorkingDirectory=$(pwd)
-ExecStart=/bin/bash $(pwd)/mine.sh
-Restart=always
-RestartSec=3
-TimeoutStartSec=0
+   [Install]
+   WantedBy=multi-user.target
+   ```
 
-[Install]
-WantedBy=multi-user.target
-```
+3. Save the service file as `coreminer.service` in `/etc/systemd/system/`.
+4. Reload the systemd daemon:
 
-1. Create file `coreverif.service` and save it into `/etc/systemd/system/` folder.
-1. Execute the command for reloading the client: `sudo systemctl daemon-reload`.
-1. Execute the command for enabling the service: `sudo systemctl enable coreverif.service`.
-1. Execute the command for starting the service: `sudo systemctl start coreverif.service`.
-1. Restart your machine. (Optional, but recommended.)
+   ```bash
+   sudo systemctl daemon-reload
+   ```
 
-### Optional steps
+5. Enable the service:
 
-1. Check if service is registered with the command: `systemctl --all | grep coreverif.service`.
-1. Reduce log files to remember past for 1 day: `sudo journalctl --rotate && journalctl --vacuum-time=1d`.
+   ```bash
+   sudo systemctl enable coreminer.service
+   ```
+
+6. Start the service:
+
+   ```bash
+   sudo systemctl start coreminer.service
+   ```
+
+7. Restart your machine (optional but recommended).
+
+### Optional Steps
+
+1. Verify the service is registered:
+
+   ```bash
+   systemctl --all | grep coreminer.service
+   ```
+
+2. Configure log rotation to keep logs for one day:
+
+   ```bash
+   sudo journalctl --rotate && journalctl --vacuum-time=1d
+   ```
 
 ## Automatic Installation
 
-Automatic installation is included in the `mine.sh` script. You can use it for the first setup or for the reinstallation.
+The automatic installation is included in the `mine.sh` script. You can use it for both initial setup and reinstallation.
 
 ## Troubleshooting
 
-Please, first follow the log file, where you can find many answers: `journalctl -u coreverif.service`.
+1. Check the service logs for detailed information:
 
-If your issue persist, open thread in [discussion board](https://github.com/catchthatrabbit/coreminer/discussions) or lastly [raise an Issue](https://github.com/catchthatrabbit/coreminer/issues/new/choose).
+   ```bash
+   journalctl -u coreminer.service
+   ```
+
+2. If issues persist:
+   - Open a thread in the [discussion board](https://github.com/catchthatrabbit/coreminer/discussions)
+   - Or [raise an issue](https://github.com/catchthatrabbit/coreminer/issues/new/choose)

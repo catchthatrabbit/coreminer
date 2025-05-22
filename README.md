@@ -6,15 +6,25 @@
 
 ## Table of Contents
 
-* [Install](#install)
-   * [Manual Installation](#manual-installation)
-   * [Automatic Installation](#automatic-installation)
-* [Usage](#usage)
-* [Limitations](#limitations)
-* [Post-installation steps](#post-installation-steps)
-* [Config file](#config-file)
-* [Build](#build)
-* [Pools](#pools)
+- [Core Miner](#core-miner)
+  - [Table of Contents](#table-of-contents)
+  - [Install](#install)
+    - [Manual Installation](#manual-installation)
+    - [Automatic Installation](#automatic-installation)
+      - [Pre-requirements](#pre-requirements)
+      - [Execution](#execution)
+    - [Cloud Deployment](#cloud-deployment)
+  - [Usage](#usage)
+    - [How to start mining](#how-to-start-mining)
+      - [Standalone](#standalone)
+  - [Limitations](#limitations)
+  - [Post-installation steps](#post-installation-steps)
+  - [Config file](#config-file)
+  - [Build](#build)
+    - [Building from source](#building-from-source)
+    - [API documentation](#api-documentation)
+  - [Pools](#pools)
+  - [License](#license)
 
 ## Install
 
@@ -46,6 +56,43 @@ bash <(curl -s https://raw.githubusercontent.com/catchthatrabbit/coreminer/maste
 ```
 
 After the installation completes, we recommend proceeding with the [post-installation steps](docs/AUTOSTART-LINUX.md) to ensure continuous high availability.
+
+### Cloud Deployment
+
+You can deploy CoreMiner to cloud instances using cloud-init. This method is particularly useful for automated deployments and scaling.
+
+Create a `cloud-init-coreminer.yaml` file with the following configuration:
+
+```yaml
+…
+# Define your Coreminer environment variables here
+write_files:
+  - path: /etc/coreminer_env
+    permissions: '0644'
+    content: |
+      COREID=your_core_id_here
+      WORKER=your_worker_name_here
+      SERVER1=fi
+      SERVER2=de
+…
+```
+
+The cloud-init configuration:
+
+1. Updates system packages
+2. Sets up environment variables for your CoreMiner configuration
+3. Creates a systemd service for automatic startup
+4. Installs required dependencies
+5. Clones the CoreMiner repository
+6. Configures the mining pool settings
+7. Enables and starts the CoreMiner service
+
+To use this configuration:
+
+1. Replace `your_core_id_here` with your CoreMiner wallet address
+2. Replace `your_worker_name_here` with your desired worker name
+3. Adjust the server locations (`SERVER1`, `SERVER2`) as needed
+4. Use this configuration when launching your cloud instance
 
 ## Usage
 
@@ -88,6 +135,7 @@ Follow the [post-installation steps](docs/AUTOSTART-LINUX.md) from documentation
 After running the `mine.sh` in the same folder produced setting file `pool.cfg`.
 
 This file is loaded from two possible sources:
+
 1. Same directory as `mine.sh` file with name `pool.cfg`.
 1. Connected flash drive named `coredrive` and `pool.cfg` is located in the root folder.
 
@@ -96,13 +144,13 @@ Example of the contents of `pool.cfg` file:
 ```bash
 wallet=cb…
 worker=Rabbit
-server[1]=eu.catchthatrabbit.com
+server[1]=fi.catchthatrabbit.com
 port[1]=8008
-server[2]=as.catchthatrabbit.com
+server[2]=de.catchthatrabbit.com
 port[2]=8008
-server[3]=eu1.catchthatrabbit.com
+server[3]=sg.catchthatrabbit.com
 port[3]=8008
-server[4]=as1.catchthatrabbit.com
+server[4]=hk.catchthatrabbit.com
 port[4]=8008
 ```
 
@@ -125,5 +173,3 @@ Read more about [Stratum server](docs/STRATUM.md) in the documentation.
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
-
-*Cryptoni confidimus*

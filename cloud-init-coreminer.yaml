@@ -1,0 +1,62 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+# Define your Coreminer environment variables here
+write_files:
+  - path: /etc/coreminer_env
+    permissions: '0644'
+    content: |
+      COREID=your_core_id_here
+      WORKER=your_worker_name_here
+      SERVER1=fi
+      SERVER2=de
+
+  - path: /etc/systemd/system/coreminer.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Coreminer Service
+      After=network.target
+
+      [Service]
+      EnvironmentFile=/etc/coreminer_env
+      ExecStart=/usr/bin/coreminer --wallet ${COREID} --name ${WORKER}
+      WorkingDirectory=/usr/bin/
+      Restart=always
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - |
+    if [ -f /var/log/coreminer_installed ]; then
+      echo "Coreminer already installed. Skipping setup."
+      exit 0
+    fi
+
+  - source /etc/coreminer_env
+  - apt update && apt install -y git wget curl unzip screen
+  - git clone https://github.com/catchthatrabbit/coreminer.git /opt/coreminer
+  - cp /opt/coreminer/coreminer /usr/bin/coreminer
+  - chmod +x /usr/bin/coreminer
+
+  - |
+    cat <<EOF > /usr/bin/pool.cfg
+    wallet=${COREID}
+    worker=${WORKER}
+    server[1]=${SERVER1}.catchthatrabbit.com
+    port[1]=8008
+    server[2]=${SERVER2}.catchthatrabbit.com
+    port[2]=8008
+    EOF
+
+  - chmod 644 /usr/bin/pool.cfg
+
+  - systemctl daemon-reexec
+  - systemctl daemon-reload
+  - systemctl enable coreminer.service
+  - systemctl start coreminer.service
+
+  - touch /var/log/coreminer_installed

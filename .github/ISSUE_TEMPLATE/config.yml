@@ -2,10 +2,13 @@ blank_issues_enabled: false
 contact_links:
   - name: Community Discussion
     url: https://github.com/catchthatrabbit/coreminer/discussions
-    about: Discussion about mining on the Core Blockchain.
-  - name: Quick Start
+    about: Join discussions about mining on the Core Blockchain
+  - name: Quick Start Guide
     url: https://catchthatrabbit.com/start-mining
-    about: To start mining, please follow this guide.
+    about: Follow our step-by-step guide to start mining
+  - name: Add Miner to Profitability Calculator
+    url: https://github.com/catchthatrabbit/ctr-web/edit/master/src/constants/machines.ts
+    about: Add your miner to CTR's profitability calculator
   - name: Support
     url: https://catchthatrabbit.com/contact
-    about: Contact support.
+    about: Get help from our support team
